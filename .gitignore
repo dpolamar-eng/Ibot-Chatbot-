@@ -32,3 +32,13 @@ pnpm-debug.log*
 *.sln
 *.sw?
 Thumbs.db
+
+# Backend (Python / Node)
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
