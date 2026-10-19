@@ -9,9 +9,9 @@ const app = Fastify({
   },
 });
 
-// Configure CORS restricted to frontend origin
+// Configure CORS restricted to frontend origins loaded from environment variables
 await app.register(cors, {
-  origin: [config.frontendOrigin, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+  origin: config.frontendOrigins,
   methods: ['GET', 'POST', 'OPTIONS'],
   credentials: true,
 });
@@ -34,7 +34,11 @@ async function start() {
   try {
     await app.listen({ port: config.port, host: config.host });
     app.log.info(`🚀 IBOT Chatbot Backend running at http://localhost:${config.port}`);
-    app.log.info(`📡 Configured Frontend Origin: ${config.frontendOrigin}`);
+    app.log.info(
+      `📡 Configured Frontend Origins: ${
+        config.frontendOrigins.length > 0 ? config.frontendOrigins.join(', ') : 'None (Strictly restricted)'
+      }`
+    );
     app.log.info(`🤖 Gemini Model: ${config.geminiModel}`);
     app.log.info(
       `🔑 Gemini API Key Status: ${
