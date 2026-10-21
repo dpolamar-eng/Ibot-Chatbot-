@@ -50,19 +50,19 @@ export function getGuidedInitialMessage(): ChatMessage {
   };
 }
 
-// Standard Greeting (For freeform Q&A mode)
+// Standard Greeting (For Career Q&A & Goal Pathway mode)
 export function getInitialMessages(): ChatMessage[] {
   return [
     {
-      id: 'msg-1',
+      id: 'msg-qa-1',
       sender: 'assistant',
-      text: "Hi there! 👋\nWelcome to Career Ladder — discover where you are, explore where you want to go, and understand how to get there.\n\nAre you looking to transition to a specific role (Career Decided), or exploring new directions (Career Exploring)?",
+      text: "Hi there! 👋\nWelcome to **Career Q&A & Goal Pathway Builder**.\n\nI'm your career strategist. In this mode, I focus on:\n• **Clarifying your career doubts** (roles, skill transitions, salary trends, interview preparation)\n• **Creating a concrete, step-by-step pathway toward your goal role** (your final destination)\n\nWhat career doubt or goal role would you like to explore today?",
       timestamp: getCurrentTimeString(),
       followupQuestions: [
-        'I know my target role (Career Decided)',
-        'I want to explore career options (Career Exploring)',
-        'Experienced professional looking to pivot',
-        'How does Career Ladder map Point A to Point B?',
+        'Create my goal role pathway',
+        'How do I transition to Full Stack Developer?',
+        'Compare AI Engineer vs Data Engineer',
+        'What projects make my resume stand out?',
       ],
     },
   ];
@@ -71,10 +71,10 @@ export function getInitialMessages(): ChatMessage[] {
 export const INITIAL_MESSAGES: ChatMessage[] = getInitialMessages();
 
 export const REFERENCE_QUICK_REPLIES: QuickReplyOption[] = [
-  { id: 'decided', label: 'I know my target career', highlighted: true },
-  { id: 'exploring', label: 'Exploring different options' },
-  { id: 'pro', label: 'Working Professional' },
-  { id: 'student', label: 'Student / Recent Graduate' },
+  { id: 'pathway', label: 'Create my goal role pathway', highlighted: true },
+  { id: 'doubts', label: 'Clarify career transition doubts' },
+  { id: 'compare', label: 'Compare two career paths' },
+  { id: 'interviews', label: 'Interview & project prep' },
 ];
 
 export const TOTAL_GUIDED_STEPS = 6;

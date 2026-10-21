@@ -132,13 +132,24 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     try {
       await confirmStudentProfileApi(sessionId);
       setProfile((prev) => ({ ...prev, status: 'confirmed' }));
+      const targetRole = profile?.goals?.targetRoles?.[0] || 'your goal role';
       const confirmMsg: ChatMessage = {
         id: `confirm-${Date.now()}`,
         sender: 'assistant',
-        text: '🎉 **Career Profile Confirmed!**\n\nYour self-reported Point A to Point B career profile has been verified and safely saved in your session. All capabilities and career aspirations are captured.',
+        text: `🎉 **Career Profile Verified & Confirmed!**\n\nYour self-reported Point A to Point B profile is securely saved in your session.\n\n🎯 **Final Destination: Goal Role Pathway**\nNow that your background and destination are established, let's create your step-by-step pathway to reach **${targetRole}**. You can also clarify any career doubts!`,
         timestamp: getCurrentTimeString(),
+        followupQuestions: [
+          `🚀 Generate My Step-by-Step Pathway to ${targetRole}`,
+          `What are my biggest capability gaps for ${targetRole}?`,
+          `Clarify a career transition doubt`,
+        ],
       };
       setMessages((prev) => [...prev, confirmMsg]);
+      setQuickReplies([
+        { id: 'pathway-dest', label: `🚀 Generate My Step-by-Step Pathway to ${targetRole}`, highlighted: true },
+        { id: 'gaps', label: `What are my biggest capability gaps for ${targetRole}?` },
+        { id: 'qa-doubt', label: `Clarify a career transition doubt` },
+      ]);
       onComplete?.(profile);
     } catch (err) {
       console.error('Failed to confirm profile:', err);
@@ -255,7 +266,13 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
           text: m.text,
         }));
 
-      const res = await sendChatMessage(formattedAnswerText, boundedHistory, sessionId, structuredAnswer);
+      const res = await sendChatMessage(
+        formattedAnswerText,
+        boundedHistory,
+        sessionId,
+        structuredAnswer,
+        'discovery'
+      );
 
       setSessionId(res.sessionId);
       if (res.profile) setProfile(res.profile);
@@ -370,8 +387,24 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
           text: m.text,
         }));
 
-      // Call backend Gemini extraction endpoint
-      const result = await sendChatMessage(text, boundedHistory, sessionId);
+      // Determine effective mode:
+      // If user asks for Goal Role Pathway or clarifies doubts, route directly to Q&A mode
+      const isPathwayOrDoubt =
+        text.includes('Generate My Step-by-Step Pathway') ||
+        text.includes('Goal Role Pathway') ||
+        text.toLowerCase().includes('create my pathway') ||
+        text.toLowerCase().includes('roadmap') ||
+        !isGuidedMode;
+
+      const effectiveMode: 'discovery' | 'qa' = isPathwayOrDoubt ? 'qa' : 'discovery';
+
+      // Switch UI to Q&A if pathway generation was selected from discovery
+      if (isPathwayOrDoubt && isGuidedMode) {
+        setIsGuidedMode(false);
+      }
+
+      // Call backend Gemini extraction or QA endpoint
+      const result = await sendChatMessage(text, boundedHistory, sessionId, undefined, effectiveMode);
 
       setSessionId(result.sessionId);
       if (result.profile) setProfile(result.profile);
@@ -380,8 +413,8 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       if (result.activeQuestionCategory) setActiveQuestionCategory(result.activeQuestionCategory);
       if (result.sectionAnalyses) setSectionAnalyses(result.sectionAnalyses);
 
-      // If complete or ready for review, show the review card
-      if (result.completionPercentage === 100 || result.activeQuestionCategory === 'review') {
+      // If in Discovery mode and complete / ready for review, show the review card
+      if (effectiveMode === 'discovery' && (result.completionPercentage === 100 || result.activeQuestionCategory === 'review')) {
         const reviewMsg: ChatMessage = {
           id: `summary-review-${Date.now()}`,
           sender: 'assistant',
@@ -402,6 +435,11 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
           followupQuestions: result.followupQuestions,
         };
         setMessages((prev) => [...prev, assistantMessage]);
+      }
+
+      // Populate interactive quick-reply chips from AI response
+      if (result.followupQuestions && result.followupQuestions.length > 0) {
+        setQuickReplies(result.followupQuestions.map((q, i) => ({ id: `qr-${i}-${Date.now()}`, label: q })));
       }
     } catch (err) {
       console.warn('Backend call failed, falling back to local career guide:', err);
@@ -486,7 +524,12 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       {/* 1. Header with live milestone tracker, mode toggle, and close/refresh buttons */}
       <ChatHeader
         mode={effectiveMode}
-        subtitle={subtitle}
+        subtitle={
+          subtitle ||
+          (isGuidedMode
+            ? 'Discovery Phase: Identify your Point A background & Point B destination'
+            : 'Career Q&A: Clarify doubts & build your goal role pathway')
+        }
         currentStep={currentStepIndex}
         totalSteps={6}
         stepTitle={activeStepTitle}
@@ -557,8 +600,8 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
             disabled={isTyping}
             placeholder={
               isGuidedMode && currentStepIndex <= 6
-                ? 'Select answer above, or type a custom question...'
-                : 'Ask about career paths, skills, transitions, roadmaps...'
+                ? 'Select answer above or specify your details...'
+                : 'Ask any career doubt or say "Create my pathway to [Goal Role]"...'
             }
           />
         </div>

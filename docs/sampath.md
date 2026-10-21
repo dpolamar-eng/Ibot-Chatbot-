@@ -264,6 +264,60 @@ cd backend && npx tsc --noEmit
    - Tested live: User and assistant messages, anonymous visitor records, career profiles (Point A/B and intent), and extracted facts are persisting into Supabase with every conversation turn.
 2. **Guest Cookie Handling (Next):** Issue signed HTTP-only cookies storing the anonymous session token hash for return-visit recognition across browser restarts.
 3. **Future Product Phases (Post-MVP):**
-   - Personalized Roadmap Generation Engine.
    - Multi-step Career Milestone Tracking.
    - Integration into the broader IBOT Candidate Dashboard.
+
+---
+
+## 9. Mode Differentiation: Discovery Mode vs. Q&A Mode
+
+### Product Rationale
+Previously, both the Guided Discovery mode and the Q&A mode were invoking the profile extraction routine (`processStudentMessage`), causing Q&A mode to feel like an intrusive questionnaire rather than a helpful career assistant.
+
+The architecture is now cleanly separated into two distinct modes with a unified final destination:
+
+```
+┌──────────────────────────────────────────────┐       ┌──────────────────────────────────────────────┐
+│           GUIDED DISCOVERY MODE              │       │                 CAREER Q&A                   │
+│         "Identify Who You Are"               │       │      "Clarify Doubts & Build Path"           │
+├──────────────────────────────────────────────┤       ├──────────────────────────────────────────────┤
+│ • Identifies Point A (stage, education,      │       │ • Directly resolves career doubts, role      │
+│   skills, practical projects/experience).    │       │   comparisons, salary trends, tool choices.  │
+│ • Identifies Point B (goals, target roles,   │       │ • ZERO intrusive survey questions (does not  │
+│   or exploration areas).                     │       │   ask for graduation year, degree, etc.).    │
+│ • Confirms verified self-reported profile.   │       │ • Uses verified profile context if available.│
+└──────────────────────┬───────────────────────┘       └──────────────────────┬───────────────────────┘
+                       │                                                      │
+                       └───────────────────────┬──────────────────────────────┘
+                                               │
+                                               ▼
+                             ┌──────────────────────────────────┐
+                             │       FINAL DESTINATION:         │
+                             │       GOAL ROLE PATHWAY          │
+                             ├──────────────────────────────────┤
+                             │ Phase 1: Core Fundamentals       │
+                             │ Phase 2: Proof-of-Work Projects  │
+                             │ Phase 3: System & Interview Prep │
+                             │ Phase 4: Job Transition Strategy │
+                             └──────────────────────────────────┘
+```
+
+### 1. Discovery Mode (Point A $\to$ Point B Identification)
+- **Role:** Profile identifier.
+- **Workflow:** 6-step guided interactive inputs (Stage $\to$ Education $\to$ Skills $\to$ Projects $\to$ Interests $\to$ Goals) or natural conversation.
+- **Completion:** Summarized in a Self-Reported Profile Review Card with 1-click confirmation.
+- **Bridge to Final Destination:** Upon confirmation, presents the primary action: `🚀 Generate My Step-by-Step Pathway to [Goal Role]`, smoothly transitioning the user into the Goal Role Pathway.
+
+### 2. Career Q&A Mode (Doubt Clarification & On-Demand Pathway)
+- **Role:** Senior Career Strategist & Pathway Architect (`generateQaReply` in `backend/src/services/gemini.ts`).
+- **Workflow:** Freeform questions, role vs. role comparisons, salary questions, portfolio advice, and roadmap formulation.
+- **Rule:** Never interrogates the candidate with missing-field survey questions. If the candidate has already completed Discovery, Gemini leverages their Point A capabilities to personalize the pathway. If not, Gemini generates the authoritative industry pathway directly.
+
+### 3. Final Destination (Goal Role Pathway)
+- Both modes converge on this concrete outcome.
+- Structured across 4 distinct phases:
+  1. **Phase 1: Core Fundamentals & Prerequisite Mental Models**
+  2. **Phase 2: Practical Proof of Work & High-Impact Portfolio Projects**
+  3. **Phase 3: System Competency & Industry/Interview Readiness**
+  4. **Phase 4: Strategic Positioning & Job Transition**
+

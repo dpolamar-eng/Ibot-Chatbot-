@@ -26,7 +26,8 @@ export async function sendChatMessage(
   message: string,
   history: ChatHistoryPayload[] = [],
   sessionId?: string,
-  structuredAnswer?: any
+  structuredAnswer?: any,
+  mode: 'discovery' | 'qa' = 'discovery'
 ): Promise<ChatResponsePayload> {
   const baseUrl = import.meta.env.VITE_API_URL || '';
   const endpoint = `${baseUrl}/api/chat`;
@@ -44,6 +45,8 @@ export async function sendChatMessage(
         message,
         sessionId,
         structuredAnswer,
+        mode,
+        history,
       }),
       signal: controller.signal,
     });

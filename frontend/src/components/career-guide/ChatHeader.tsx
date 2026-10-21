@@ -129,30 +129,30 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         {/* Action icons: Guided/Q&A Switcher, Restart, Close */}
         <div className="flex items-center gap-1.5">
           {onToggleGuidedMode && (
-            <div className="flex items-center bg-black/20 p-0.5 rounded-lg border border-white/15 text-[11px]">
+            <div className="flex items-center bg-black/25 p-0.5 rounded-lg border border-white/20 text-[11px]">
               <button
                 type="button"
                 onClick={() => onToggleGuidedMode(true)}
                 className={cn(
-                  'px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1',
+                  'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5',
                   isGuidedMode ? 'bg-white text-[#2552f4] shadow-xs' : 'text-white/80 hover:text-white'
                 )}
-                title="Structured 6-step discovery"
+                title="Discovery Phase: Identify your background & goals"
               >
-                <Compass className="w-3 h-3" />
-                <span className="hidden sm:inline">Discovery</span>
+                <Compass className="w-3.5 h-3.5" />
+                <span>Discovery</span>
               </button>
               <button
                 type="button"
                 onClick={() => onToggleGuidedMode(false)}
                 className={cn(
-                  'px-2 py-0.5 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1',
+                  'px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer flex items-center gap-1.5',
                   !isGuidedMode ? 'bg-white text-[#2552f4] shadow-xs' : 'text-white/80 hover:text-white'
                 )}
-                title="Free-form career assistant Q&A"
+                title="Career Q&A: Clarify doubts & build goal role pathway"
               >
-                <MessageSquare className="w-3 h-3" />
-                <span className="hidden sm:inline">Q&A</span>
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Career Q&A</span>
               </button>
             </div>
           )}

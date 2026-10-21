@@ -1,5 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 import { config, isGeminiConfigured } from '../config.js';
+import type { StudentCareerProfile } from '../types/profile.js';
 
 export interface ChatHistoryItem {
   role: 'user' | 'model';
@@ -210,3 +211,181 @@ export async function generateChatReply(
     };
   }
 }
+
+const QA_SYSTEM_INSTRUCTION = `You are the Career Ladder Senior Career Strategist & Goal Pathway Architect.
+
+Your twin missions are:
+1. CLARIFY CAREER DOUBTS:
+   - Provide direct, expert, and nuanced answers to the user's career questions, doubts, dilemmas, role comparisons, tech stack choices, industry trends, and salary insights.
+   - Be authoritative yet encouraging, realistic, and practical.
+
+2. BUILD GOAL ROLE PATHWAYS (THE FINAL DESTINATION):
+   - Whenever the user asks how to reach a role, transition fields, prepare for a goal career, or says "create my pathway", map out a concrete, step-by-step roadmap from Point A to Point B:
+     * Phase 1: Core Fundamentals & Prerequisite Mental Models
+     * Phase 2: Practical Proof-of-Work & High-Impact Portfolio Projects
+     * Phase 3: System Competency & Industry/Interview Readiness
+     * Phase 4: Strategic Positioning & Job Transition (resumes, networking, interviews)
+
+CRITICAL RULES:
+- DO NOT interrogate the user with missing-profile survey questions (NEVER ask for graduation year, degree, or step-by-step personal info unless directly clarifying their doubt).
+- When a user has a verified profile (Point A to Point B), USE IT TO PERSONALIZE the pathway directly (referencing their existing skills, education, and specific target role).
+- Format responses cleanly using GitHub-flavored Markdown with bold headings, concise bullet points, and clear actionable takeaways. Avoid long walls of unbroken text.`;
+
+function buildProfileContext(profile?: StudentCareerProfile): string {
+  if (!profile) return '';
+  const parts: string[] = [];
+  if (profile.aboutYou?.currentStage) parts.push(`Current Stage: ${profile.aboutYou.currentStage}`);
+  if (profile.education?.degree || profile.education?.field) {
+    parts.push(`Education: ${profile.education.degree || ''} in ${profile.education.field || ''} (Grad: ${profile.education.graduationYear || 'N/A'})`);
+  }
+  if (Array.isArray(profile.skills) && profile.skills.length > 0) {
+    parts.push(`Known Skills: ${profile.skills.map((s) => s.name).join(', ')}`);
+  }
+  if (profile.goals?.targetRoles?.length) {
+    parts.push(`Target Goal Role(s) (Point B): ${profile.goals.targetRoles.join(', ')}`);
+  }
+  if (profile.practicalExperience?.projects?.length) {
+    parts.push(`Projects / Practical Exposure: ${profile.practicalExperience.projects.map((p) => p.title).join(', ')}`);
+  }
+  if (parts.length === 0) return '';
+  return `\n\n[USER VERIFIED PROFILE CONTEXT]\n${parts.join('\n')}\n(Personalize your advice and pathway to these specific Point A capabilities and Point B target role).`;
+}
+
+function extractQaFollowupQuestions(replyText: string, userMessage: string, profile?: StudentCareerProfile): string[] {
+  const norm = (replyText + ' ' + userMessage).toLowerCase();
+  const targetRole = profile?.goals?.targetRoles?.[0] || 'this role';
+
+  if (norm.includes('phase') || norm.includes('pathway') || norm.includes('roadmap') || norm.includes('step')) {
+    return [
+      `What portfolio projects stand out most for ${targetRole}?`,
+      `How long does this transition typically take?`,
+      `What are the most common interview traps for ${targetRole}?`,
+      `How do I tailor my resume for this pathway?`,
+    ];
+  }
+
+  if (norm.includes('vs') || norm.includes('compare') || norm.includes('difference')) {
+    return [
+      `Create a step-by-step pathway for my preferred option`,
+      `Which role has better 3-year market demand?`,
+      `How do skills transfer between these two paths?`,
+      `What daily work looks like in each role`,
+    ];
+  }
+
+  return [
+    `Create my step-by-step pathway to ${targetRole}`,
+    `What high-impact project should I build next?`,
+    `What are the top capability gaps I need to bridge?`,
+    `How to prepare for technical interviews`,
+  ];
+}
+
+/**
+ * Dedicated Q&A and Goal Role Pathway generation handler.
+ * Never interrogates for profile fields; clarifies doubts and builds concrete career pathways.
+ */
+export async function generateQaReply(
+  userMessage: string,
+  history: ChatHistoryItem[] = [],
+  profile?: StudentCareerProfile
+): Promise<ChatResponse> {
+  const client = getClient();
+
+  if (!client) {
+    return {
+      reply:
+        "⚠️ **Gemini API Key Required**\n\nTo enable dynamic AI responses, please set your `GEMINI_API_KEY` in `backend/.env`:\n\n1. Open `backend/.env`.\n2. Add your key: `GEMINI_API_KEY=AIzaSy...`\n3. Restart the backend server.",
+      followupQuestions: [
+        'How to get a Gemini API key',
+        'Create my Full Stack Developer pathway',
+        'Top interview questions for Software Engineers',
+      ],
+    };
+  }
+
+  try {
+    const boundedHistory = history.slice(-10);
+    const contents: any[] = boundedHistory.map((item) => ({
+      role: item.role === 'model' ? 'model' : 'user',
+      parts: [{ text: item.text }],
+    }));
+
+    const profileContext = buildProfileContext(profile);
+    const userPromptWithContext = profileContext
+      ? `${userMessage.trim()}\n${profileContext}`
+      : userMessage.trim();
+
+    contents.push({
+      role: 'user',
+      parts: [{ text: userPromptWithContext }],
+    });
+
+    const candidateModels = Array.from(
+      new Set([
+        config.geminiModel,
+        'gemini-3.5-flash-lite',
+        'gemini-3.1-flash-lite',
+        'gemini-3.5-flash',
+        'gemini-flash-latest',
+      ])
+    );
+
+    let response: any = null;
+    let lastError: any = null;
+
+    for (const modelName of candidateModels) {
+      try {
+        response = await client.models.generateContent({
+          model: modelName,
+          contents,
+          config: {
+            systemInstruction: QA_SYSTEM_INSTRUCTION,
+            maxOutputTokens: 1200,
+            temperature: 0.65,
+          },
+        });
+        if (response && response.text) {
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        const errMsg = err?.message || '';
+        if (errMsg.includes('503') || errMsg.includes('404') || errMsg.includes('not found')) {
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!response && lastError) {
+      throw lastError;
+    }
+
+    const replyText =
+      response?.text ||
+      "I'm here to clarify your career doubts and build a concrete pathway toward your goal role. What role or question would you like to explore?";
+    const followupQuestions = extractQaFollowupQuestions(replyText, userMessage, profile);
+
+    return {
+      reply: replyText,
+      followupQuestions,
+    };
+  } catch (error: any) {
+    const errorMsg = error?.message || String(error);
+
+    if (errorMsg.includes('429') || errorMsg.toLowerCase().includes('quota') || errorMsg.toLowerCase().includes('rate limit')) {
+      return {
+        reply:
+          "⚠️ **Gemini API Rate Limit Reached**\n\nThe free Gemini API request quota has been temporarily reached. Please wait a minute before sending your next question, or verify your quota at Google AI Studio.",
+        followupQuestions: ['Try again in a moment', 'Software Development Roadmap'],
+      };
+    }
+
+    return {
+      reply: `⚠️ **AI Service Notice:** Could not generate response (${errorMsg.slice(0, 150)}). Please try asking again.`,
+      followupQuestions: ['Try asking again', 'Software Development Roadmap'],
+    };
+  }
+}
+

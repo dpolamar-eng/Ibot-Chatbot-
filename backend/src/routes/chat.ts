@@ -6,6 +6,7 @@ import {
   resetSession,
 } from '../services/sessionStore.js';
 import { processStudentMessage } from '../services/extraction.js';
+import { generateQaReply } from '../services/gemini.js';
 import {
   persistChatTurn,
   confirmProfileInDb,
@@ -15,6 +16,8 @@ interface ChatRequestBody {
   message: string;
   sessionId?: string;
   structuredAnswer?: any;
+  mode?: 'discovery' | 'qa';
+  history?: Array<{ role: 'user' | 'model'; text: string }>;
 }
 
 interface ConfirmRequestBody {
@@ -38,7 +41,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // 2. Dynamic Chat & Profile Extraction endpoint
+  // 2. Dynamic Chat & Profile Extraction endpoint (supports Discovery & QA modes)
   fastify.post(
     '/api/chat',
     {
@@ -50,12 +53,23 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
             message: { type: 'string', minLength: 1, maxLength: 3000 },
             sessionId: { type: 'string', maxLength: 100 },
             structuredAnswer: { type: 'object' },
+            mode: { type: 'string', enum: ['discovery', 'qa'] },
+            history: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  role: { type: 'string' },
+                  text: { type: 'string' },
+                },
+              },
+            },
           },
         },
       },
     },
     async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
-      const { message, sessionId, structuredAnswer } = request.body;
+      const { message, sessionId, structuredAnswer, mode = 'discovery', history } = request.body;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return reply.status(400).send({
@@ -68,7 +82,41 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
         // Retrieve or initialize session state
         const session = getOrCreateSession(sessionId);
 
-        // Process message with Gemini extraction & dynamic follow-up selection
+        // MODE 1: Q&A MODE (Career Doubts & Goal Role Pathway Formulation)
+        // Does NOT interrogate the user with missing-profile survey questions.
+        if (mode === 'qa') {
+          const qaResult = await generateQaReply(
+            message.trim(),
+            history || [],
+            session.profile
+          );
+
+          // Asynchronously persist to the 6-table Supabase schema
+          persistChatTurn({
+            sessionId: session.sessionId,
+            userMessage: message.trim(),
+            assistantReply: qaResult.reply,
+            profile: session.profile,
+            activeCategory: 'career_qa',
+            suggestedFollowUps: qaResult.followupQuestions,
+            changeHistory: session.changeHistory,
+          }).catch((err) => fastify.log.error(err, 'Failed to persist QA turn to Supabase'));
+
+          return reply.status(200).send({
+            sessionId: session.sessionId,
+            reply: qaResult.reply,
+            profile: session.profile,
+            missingFields: session.missingFields,
+            sectionAnalyses: session.sectionAnalyses,
+            completionPercentage: session.completionPercentage,
+            activeQuestionCategory: 'career_qa',
+            suggestedFollowUps: qaResult.followupQuestions,
+            followupQuestions: qaResult.followupQuestions,
+            changeHistory: session.changeHistory,
+          });
+        }
+
+        // MODE 2: GUIDED DISCOVERY MODE (Identifying People & Progressive Profile Extraction)
         const result = await processStudentMessage(message.trim(), session, structuredAnswer);
 
         // Asynchronously persist to the 6-table Supabase schema without blocking HTTP response
@@ -80,7 +128,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
           activeCategory: result.activeQuestionCategory,
           suggestedFollowUps: result.suggestedFollowUps,
           changeHistory: result.session.changeHistory,
-        }).catch((err) => fastify.log.error(err, 'Failed to persist turn to Supabase'));
+        }).catch((err) => fastify.log.error(err, 'Failed to persist Discovery turn to Supabase'));
 
         return reply.status(200).send({
           sessionId: result.session.sessionId,
@@ -91,6 +139,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
           completionPercentage: result.session.completionPercentage,
           activeQuestionCategory: result.activeQuestionCategory,
           suggestedFollowUps: result.suggestedFollowUps,
+          followupQuestions: result.suggestedFollowUps,
           changeHistory: result.session.changeHistory,
         });
       } catch (err: any) {
