@@ -9,23 +9,25 @@ interface EducationSelectorProps {
 }
 
 const MAJORS = [
-  'Computer Science & Engineering',
-  'Information Technology',
-  'AI & Data Science',
-  'Electronics & Communication',
-  'Electrical Engineering',
-  'Mechanical / Civil Engineering',
-  'Other / Self-Taught',
+  'Computer Science / Software',
+  'Commerce, Finance & Accounting',
+  'Business Administration & Management',
+  'Data Science & Mathematics',
+  'Engineering (Electronics / Mech / Civil)',
+  'Humanities, Social Sciences & Arts',
+  'Healthcare & Biological Sciences',
+  'Self-Taught / Direct Experience',
 ];
 
 const CORE_SUBJECTS = [
-  'Data Structures & Algorithms',
-  'Object-Oriented Programming (OOP)',
-  'Database Management (DBMS / SQL)',
-  'Operating Systems',
-  'Computer Networks',
-  'System Design Basics',
-  'Web Architecture',
+  'Data & Quantitative Analysis',
+  'Software Architecture & Principles',
+  'Financial Modeling & Economics',
+  'Business Strategy & Marketing',
+  'Project & Operations Management',
+  'Database Management & SQL',
+  'User Experience & Design Thinking',
+  'Critical Problem Solving',
 ];
 
 export const EducationSelector: React.FC<EducationSelectorProps> = ({

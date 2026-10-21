@@ -50,3 +50,34 @@ The frontend conversational component (`frontend/`) collects structured student 
 
 3. **`POST /api/v1/chat/message`**
    - **Purpose:** Handle free-form conversational Q&A queries with real-time streaming (SSE) response.
+
+---
+
+## Supabase Database Integration
+
+The backend is integrated with [Supabase](https://supabase.com) to collect and analyze user interaction data, student capabilities, and conversation journeys.
+
+### 1. Configure Environment Variables (`backend/.env`)
+
+Add your project credentials from your [Supabase Dashboard](https://supabase.com/dashboard/project/_/settings/api):
+
+```env
+SUPABASE_URL=https://<your-project-id>.supabase.co
+SUPABASE_ANON_KEY=<your-anon-public-key>
+SUPABASE_SERVICE_ROLE_KEY=<your-service-role-secret-key>
+```
+
+### 2. Create Database Tables
+
+1. Open your Supabase project dashboard.
+2. Go to **SQL Editor** in the left sidebar.
+3. Click **New Query**.
+4. Copy and paste the contents of [`backend/supabase_schema.sql`](./supabase_schema.sql).
+5. Click **Run**.
+
+This creates:
+- `chat_sessions`: Tracks active student sessions and last activity timestamps.
+- `chat_messages`: Stores user and model dialogue history.
+- `student_profiles`: Granular skills, stage, education, projects, interests, and goals.
+- `user_analytics_events`: Event-level logs to track step completion and user drop-off.
+- Analytics Views: `v_student_profiles_summary`, `v_top_reported_skills`, and `v_profile_completion_funnel`.

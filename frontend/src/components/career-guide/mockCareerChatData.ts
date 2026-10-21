@@ -41,11 +41,11 @@ export function getGuidedInitialMessage(): ChatMessage {
   return {
     id: 'guided-step-1',
     sender: 'assistant',
-    text: "Welcome to Career Ladder! 👋\nI'm IBOT, your career capability mentor in Ottobon's Identify phase.\n\nLet's map your career profile across education, skills, projects, and goals so you can explore suitable career directions and understand what to develop next.\n\nTo begin, what best describes your current career stage?",
+    text: "Welcome to Career Ladder! 👋\nI'm your AI career intelligence assistant.\n\nMy mission is to help you navigate from **Point A (where you are now)** to **Point B (where you want to go)**. Whether you already have a target destination in mind or are exploring new directions across any field, I'll help you map out your trajectory.\n\nTo begin, what best describes your current career stage?",
     timestamp: getCurrentTimeString(),
     inputType: 'stage_select',
     stepIndex: 1,
-    stepTitle: 'Career Stage & Timeline',
+    stepTitle: 'Current Position (Point A)',
     isCompletedStep: false,
   };
 }
@@ -56,13 +56,13 @@ export function getInitialMessages(): ChatMessage[] {
     {
       id: 'msg-1',
       sender: 'assistant',
-      text: "Hi there! 👋\nI'm IBOT, your AI career guide.\nHow can I help you today?",
+      text: "Hi there! 👋\nWelcome to Career Ladder — discover where you are, explore where you want to go, and understand how to get there.\n\nAre you looking to transition to a specific role (Career Decided), or exploring new directions (Career Exploring)?",
       timestamp: getCurrentTimeString(),
       followupQuestions: [
-        'Start Guided Career Discovery',
-        'Software Development Roadmap',
-        'How to get started in AI / ML?',
-        'Resume tips for college placements',
+        'I know my target role (Career Decided)',
+        'I want to explore career options (Career Exploring)',
+        'Experienced professional looking to pivot',
+        'How does Career Ladder map Point A to Point B?',
       ],
     },
   ];
@@ -71,10 +71,10 @@ export function getInitialMessages(): ChatMessage[] {
 export const INITIAL_MESSAGES: ChatMessage[] = getInitialMessages();
 
 export const REFERENCE_QUICK_REPLIES: QuickReplyOption[] = [
-  { id: 'dev', label: 'Software Development', highlighted: true },
-  { id: 'data', label: 'Data Analytics' },
-  { id: 'aiml', label: 'AI / ML' },
-  { id: 'unsure', label: 'Not sure yet' },
+  { id: 'decided', label: 'I know my target career', highlighted: true },
+  { id: 'exploring', label: 'Exploring different options' },
+  { id: 'pro', label: 'Working Professional' },
+  { id: 'student', label: 'Student / Recent Graduate' },
 ];
 
 export const TOTAL_GUIDED_STEPS = 6;
@@ -87,11 +87,11 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-2-${Date.now()}`,
         sender: 'assistant',
-        text: 'Great! Now let’s look at your educational background and foundational CS coursework. What is your major and which core academic concepts have you covered?',
+        text: 'Great! Next, tell me about your educational or training background. What is your field of study or highest qualification? (If you are an experienced professional or self-taught, you can share certifications or key background areas).',
         timestamp: time,
         inputType: 'education_select',
         stepIndex: 2,
-        stepTitle: 'Education & Academic Focus',
+        stepTitle: 'Education & Qualifications',
         isCompletedStep: false,
       };
 
@@ -99,11 +99,11 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-3-${Date.now()}`,
         sender: 'assistant',
-        text: 'Next, let’s identify your technical skills and capabilities. Select the programming languages, frameworks, and tools you have used or are currently learning. You can also indicate your comfort level.',
+        text: 'Now, let’s identify your core capabilities and strengths. What skills, tools, domain competencies, or specialized methodologies do you work with or know best? You can also specify your comfort level.',
         timestamp: time,
         inputType: 'skills_select',
         stepIndex: 3,
-        stepTitle: 'Technical Skills & Capabilities',
+        stepTitle: 'Skills & Capabilities',
         isCompletedStep: false,
       };
 
@@ -111,11 +111,11 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-4-${Date.now()}`,
         sender: 'assistant',
-        text: 'Practical experience and projects demonstrate your ability to write real software. Have you built any applications, capstone projects, or completed internships?\n\n(If you are focusing purely on fundamentals right now, feel free to skip this step!)',
+        text: 'Practical exposure and accomplishments prove real-world execution. What key projects, work achievements, or practical experiences stand out in your journey so far?\n\n(If you are just getting started or focusing on fundamentals, feel free to skip this step!)',
         timestamp: time,
         inputType: 'projects_entry',
         stepIndex: 4,
-        stepTitle: 'Practical Experience & Projects',
+        stepTitle: 'Practical Experience & Accomplishments',
         isCompletedStep: false,
       };
 
@@ -123,7 +123,7 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-5-${Date.now()}`,
         sender: 'assistant',
-        text: 'Now let’s explore your interests and work style preferences. Which engineering problem spaces excite you, and what type of engineering culture do you thrive in?',
+        text: 'Let’s look at your interests and work style preferences. What problem domains, industries, or working environments bring out your best performance and motivation?',
         timestamp: time,
         inputType: 'interests_select',
         stepIndex: 5,
@@ -135,11 +135,11 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-6-${Date.now()}`,
         sender: 'assistant',
-        text: 'Almost done! Lastly, what primary job roles are you aiming for in your upcoming placements, and what is your top development priority right now?',
+        text: 'Almost done! Now let’s define Point B: What is your target career destination, or what specific directions are you exploring? What is your primary development priority right now?',
         timestamp: time,
         inputType: 'goals_select',
         stepIndex: 6,
-        stepTitle: 'Target Roles & Aspirations',
+        stepTitle: 'Career Destination & Goals (Point B)',
         isCompletedStep: false,
       };
 
@@ -148,17 +148,17 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-summary-${Date.now()}`,
         sender: 'assistant',
-        text: 'Congratulations! 🎉 Your discovery walkthrough is complete. Below is your synthesized career direction, capability breakdown, and high-yield next steps:',
+        text: 'Congratulations! 🎉 Your career profile mapping is complete. Below is your synthesized Point A to Point B overview and initial development insights:',
         timestamp: time,
         inputType: 'summary_card',
         stepIndex: 7,
-        stepTitle: 'Career Discovery Results',
+        stepTitle: 'Career Synthesis & Review',
         isCompletedStep: true,
         followupQuestions: [
-          'Give me a 90-day learning roadmap',
-          'Review my resume for ATS compliance',
-          'What are the most common coding interview questions?',
-          'How to prepare for campus placements?',
+          'What are my primary capability gaps?',
+          'What transferable skills can I leverage?',
+          'How to structure my transition timeline?',
+          'Explore alternative career options',
         ],
       };
   }
@@ -173,7 +173,7 @@ export function getMockAssistantReply(
   // If a file was attached (e.g. resume or project report)
   if (fileName) {
     return {
-      replyText: `I have received your document "${fileName}"! 📄\n\nBased on your profile, here is how you can maximize your impact:\n• Highlight measurable outcomes in your key projects.\n• Showcase hands-on experience with Python and production frameworks.\n• Keep your technical skills organized and placement-ready.\n\nWhich area would you like to review further?`,
+      replyText: `I have received your document "${fileName}"! 📄\n\nBased on your profile, here is how you can maximize your impact:\n• Highlight measurable outcomes in your key projects or professional achievements.\n• Showcase hands-on experience with core domain tools and frameworks.\n• Keep your capabilities organized and interview-ready.\n\nWhich area would you like to review further?`,
       followupQuestions: [
         'How to write bullet points with measurable impact',
         'Projects to add to strengthen this resume',
@@ -194,12 +194,12 @@ export function getMockAssistantReply(
   ) {
     return {
       replyText:
-        'Here is a proven, stress-free DSA roadmap for tech placements:\n\n1. **Phase 1 (Arrays & Strings)**: Master Two Pointers, Sliding Window, and HashMaps (30 problems).\n2. **Phase 2 (Lists, Stacks & Queues)**: Pointer manipulation and monotonic stacks (25 problems).\n3. **Phase 3 (Trees & Graphs)**: BFS/DFS traversals and Binary Search Trees (30 problems).\n4. **Phase 4 (Dynamic Programming)**: Master standard 1D and 2D patterns (25 problems).\n\nFocus on recognizing core patterns rather than memorizing individual solutions!',
+        'Here is a proven, stress-free technical preparation roadmap:\n\n1. **Phase 1 (Arrays & Strings)**: Master Two Pointers, Sliding Window, and HashMaps (30 problems).\n2. **Phase 2 (Lists, Stacks & Queues)**: Pointer manipulation and monotonic stacks (25 problems).\n3. **Phase 3 (Trees & Graphs)**: BFS/DFS traversals and Binary Search Trees (30 problems).\n4. **Phase 4 (Dynamic Programming)**: Master standard 1D and 2D patterns (25 problems).\n\nFocus on recognizing core patterns rather than memorizing individual solutions!',
       followupQuestions: [
         'Top 10 most common interview patterns',
         'How to master Dynamic Programming',
-        'System Design basics for freshers',
-        'Top full-stack project ideas for placements',
+        'System Design fundamentals',
+        'High-impact projects for career transitions',
       ],
     };
   }
@@ -218,7 +218,7 @@ export function getMockAssistantReply(
         'How to deploy projects on AWS / Docker',
         'How to write a standout GitHub README',
         'How to prepare for DSA & LeetCode?',
-        'Resume tips for college placements',
+        'Resume tips for career transitions',
       ],
     };
   }
@@ -232,16 +232,16 @@ export function getMockAssistantReply(
   ) {
     return {
       replyText:
-        'Software Development is a high-impact, high-growth path with Python! Here is a focused roadmap for your 3rd year:\n\n1. **Core CS & Python**: Master Data Structures, Algorithms, and Object-Oriented design.\n2. **Web Framework**: Build production-ready REST APIs using FastAPI or Django.\n3. **Databases & Caching**: Learn PostgreSQL schema design and Redis caching.\n4. **End-to-End Projects**: Deploy 2 complete full-stack apps with Docker and CI/CD.\n\nWhich area would you like to explore next?',
+        'Software Development is a high-impact, high-growth path! Here is a focused roadmap:\n\n1. **Core CS & Languages**: Master Data Structures, Algorithms, and Object-Oriented design.\n2. **Web Frameworks**: Build production-ready REST APIs using FastAPI, Django, or Node.js.\n3. **Databases & Caching**: Learn PostgreSQL schema design and Redis caching.\n4. **End-to-End Projects**: Deploy 2 complete full-stack apps with Docker and CI/CD.\n\nWhich area would you like to explore next?',
       followupQuestions: [
-        'Top full-stack project ideas for placements',
+        'High-impact project ideas for transitions',
         'FastAPI vs Django: which should I learn?',
-        'How to prepare for DSA & LeetCode?',
+        'How to prepare for technical interviews?',
         'What databases are asked in tech interviews?',
       ],
       nextReplies: [
         { id: 'project-ideas', label: 'Project Ideas', highlighted: true },
-        { id: 'interview-prep', label: 'Placement Prep' },
+        { id: 'interview-prep', label: 'Interview Prep' },
         { id: 'explore-more', label: 'Explore Other Tracks' },
       ],
     };
@@ -297,20 +297,21 @@ export function getMockAssistantReply(
     normalized.includes('cv') ||
     normalized.includes('placement') ||
     normalized.includes('internship') ||
-    normalized.includes('interview')
+    normalized.includes('interview') ||
+    normalized.includes('transition')
   ) {
     return {
       replyText:
-        'For college placements and internships, hiring managers look for:\n\n1. **2 High-Impact Projects**: Live deployment, clean GitHub README, and measurable metrics.\n2. **Strong Problem Solving**: Consistent practice on LeetCode/CodeChef (100+ medium problems).\n3. **Clean Resume Format**: Single page, ATS-friendly, highlighting tech stack and achievements.\n\nWhat would you like assistance with?',
+        'For competitive hiring and career transitions, hiring managers look for:\n\n1. **2 High-Impact Accomplishments/Projects**: Live outcomes, clear contributions, and measurable metrics.\n2. **Demonstrated Problem Solving**: Practical execution and strong domain knowledge.\n3. **Clean Resume Format**: Single page, ATS-friendly, highlighting capabilities and achievements.\n\nWhat would you like assistance with?',
       followupQuestions: [
         'How to write bullet points with measurable impact',
         'Common ATS resume mistakes to avoid',
-        'Top DSA topics asked in college placements',
-        'How to prepare for HR & behavioral rounds',
+        'Technical interview preparation priorities',
+        'How to prepare for behavioral rounds',
       ],
       nextReplies: [
         { id: 'project-ideas', label: 'Project Ideas', highlighted: true },
-        { id: 'dsa-prep', label: 'DSA Prep Strategy' },
+        { id: 'dsa-prep', label: 'Technical Prep Strategy' },
         { id: 'dev', label: 'Software Development' },
       ],
     };
@@ -319,12 +320,12 @@ export function getMockAssistantReply(
   // Fallback intelligent response
   return {
     replyText:
-      "That's a great question! In building your tech career, consistency is key. Focus on applying what you learn by shipping 2-3 end-to-end projects, keeping your GitHub active, and building strong problem-solving fundamentals.\n\nWhich area would you like to explore next?",
+      "That's a great question! In career advancement and transitions, consistency is key. Focus on applying what you learn through hands-on accomplishments, keeping your practical portfolio current, and building strong domain fundamentals.\n\nWhich area would you like to explore next?",
     followupQuestions: [
       'Software Development Roadmap',
       'How to get started in AI / ML?',
-      'Top full-stack project ideas for placements',
-      'Resume tips for college placements',
+      'High-impact projects for career transitions',
+      'Resume & portfolio review tips',
     ],
     nextReplies: REFERENCE_QUICK_REPLIES,
   };

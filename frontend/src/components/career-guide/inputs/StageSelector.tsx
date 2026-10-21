@@ -11,36 +11,43 @@ interface StageSelectorProps {
 
 const STAGES = [
   {
-    id: 'pre_final',
-    title: '3rd Year B.Tech / Pre-Final Year',
-    description: 'Preparing for upcoming campus placement drives and summer tech internships.',
-    icon: GraduationCap,
-    badge: 'High Focus',
+    id: 'working_pro',
+    title: 'Working Professional',
+    description: 'Currently in the workforce; seeking career advancement, role elevation, or deeper impact.',
+    icon: Briefcase,
+    badge: 'Growth & Advancement',
   },
   {
-    id: 'final_year',
-    title: 'Final Year Student (4th Year)',
-    description: 'Actively preparing for full-time graduate roles, ATS resumes, and final interviews.',
+    id: 'career_switcher',
+    title: 'Career Changer / Transition',
+    description: 'Looking to pivot from your current role or industry into an exciting new discipline.',
     icon: Rocket,
-    badge: 'Immediate',
+    badge: 'Career Pivot',
   },
   {
-    id: 'early_years',
-    title: '1st or 2nd Year Student',
-    description: 'Exploring foundational tracks, learning core languages, and building starter projects.',
-    icon: BookOpen,
-    badge: 'Foundation',
+    id: 'student',
+    title: 'College / University Student',
+    description: 'Currently enrolled in an undergraduate or master’s program; building foundations.',
+    icon: GraduationCap,
+    badge: 'Foundation & Entry',
   },
   {
     id: 'recent_grad',
-    title: 'Recent Graduate / Early Career',
-    description: 'Targeting a career transition or seeking entry-level engineering opportunities.',
-    icon: Briefcase,
-    badge: 'Career Transition',
+    title: 'Recent Graduate / Job Seeker',
+    description: 'Graduated or transitioning between roles; actively pursuing your next career destination.',
+    icon: BookOpen,
+    badge: 'Immediate Search',
   },
 ];
 
-const GRAD_YEARS = ['2026', '2027', '2028', '2029', 'Already Graduated'];
+const GRAD_YEARS = [
+  'Immediate (1–2 mos)',
+  'Next 3–6 months',
+  '6–12 months',
+  'Flexible / Exploring',
+  '2026 Grad',
+  '2027 Grad',
+];
 
 export const StageSelector: React.FC<StageSelectorProps> = ({
   selectedStage,
@@ -101,10 +108,10 @@ export const StageSelector: React.FC<StageSelectorProps> = ({
         </div>
       </div>
 
-      {/* 2. Target Graduation Year */}
+      {/* 2. Target Horizon / Timeline */}
       <div>
         <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-          Target Graduation / Placement Year
+          Target Horizon / Goal Timeline
         </label>
         <div className="flex flex-wrap gap-2">
           {GRAD_YEARS.map((yr) => {

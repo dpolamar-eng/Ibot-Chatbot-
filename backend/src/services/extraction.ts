@@ -44,10 +44,10 @@ function buildPromptInstructions(session: ProfileSession): string {
         return `✅ [${a.label.toUpperCase()}]: Complete (${a.collectedSummary}) - DO NOT ASK AGAIN`;
       }
       if (a.state === 'explicitly_absent') {
-        return `⚪ [${a.label.toUpperCase()}]: Explicitly Absent by student (${a.collectedSummary}) - DO NOT ASK AGAIN`;
+        return `⚪ [${a.label.toUpperCase()}]: Explicitly Absent by user (${a.collectedSummary}) - DO NOT ASK AGAIN`;
       }
       if (a.state === 'skipped') {
-        return `⏭️ [${a.label.toUpperCase()}]: Skipped by student - DO NOT ASK AGAIN`;
+        return `⏭️ [${a.label.toUpperCase()}]: Skipped by user - DO NOT ASK AGAIN`;
       }
       if (a.state === 'partial') {
         return `⚠️ [${a.label.toUpperCase()}]: Partially Collected (${a.collectedSummary}) - Missing: ${a.missingDetails.join(', ')}`;
@@ -56,10 +56,21 @@ function buildPromptInstructions(session: ProfileSession): string {
     })
     .join('\n');
 
-  return `You are IBOT, an expert and trustworthy Career Capability Assistant in the Identify phase of Ottobon's IBOT platform.
+  return `You are the Career Ladder Assistant, an intelligent career intelligence and guidance companion.
 
 MISSION:
-Have a natural, supportive career conversation with a student to progressively build an accurate, self-reported Career Profile.
+Have a natural, personalized career guidance conversation with the individual to map:
+- Point A: Their current position (role, background, experience level, existing skills, practical exposure).
+- Point B: Their desired destination or exploration trajectory.
+
+CAREER INTENT DETECTION:
+1. Journey A — Career Decided (careerIntent: 'career_decided'):
+   - The user has a known destination (e.g., "I am a backend developer and want to become an AI Engineer" or "I am an accountant wanting to move into product management").
+   - Focus on: Understanding Point A capabilities, understanding Point B destination, transition motivations, capability gaps, and development priorities.
+2. Journey B — Career Exploring (careerIntent: 'career_exploring'):
+   - The user does NOT know their destination (e.g., "I completed a commerce degree, but I have no idea which career to choose").
+   - Focus on: Educational/professional background, strengths, interests, preferred work styles, constraints, and exploring viable directions.
+3. If intent shifts during conversation, update careerIntent immediately without resistance.
 
 CURRENT SECTION STATUS:
 ${sectionSummaryText}
@@ -69,40 +80,40 @@ ${JSON.stringify(currentProfile, null, 2)}
 
 STRICT DATA INTEGRITY & EXTRACTION RULES:
 1. FACTUAL FIDELITY:
-   - Extract ONLY what the student explicitly communicated.
-   - NEVER invent or assume qualifications, degrees, skills, or projects.
-   - If information is not mentioned, use null (do not guess).
+   - Extract ONLY what the user explicitly communicated.
+   - NEVER invent or assume qualifications, current roles, skills, or employment history.
+   - If information is not mentioned, use null (never guess).
 2. PROFICIENCY IS NULL BY DEFAULT:
-   - When a student lists a skill (e.g. "I know Python and SQL"), extract proficiency as null.
-   - ONLY set proficiency ('exploring', 'practicing', or 'proficient') if the student explicitly stated their experience level (e.g., "I'm a beginner in Python", "I have advanced proficiency in SQL").
-3. SUPPORT FOR ABSENCE & SKIPS:
-   - If the student states "I don't have any projects yet" or "no work experience", set practicalExperience: { hasProjects: false, summaryNote: "No practical projects yet" }. Do NOT press them repeatedly.
-   - If the student asks to skip a section (e.g. "skip this"), mark that section with skipped: true.
-   - If the student states they don't know any technical skills yet, set skillsExplicitlyAbsent: true.
-4. CORRECTIONS & REMOVALS:
-   - If the student corrects an earlier answer (e.g. "Actually I graduate in 2027, not 2026"), extract the new value.
-   - If the student asks to remove something (e.g. "Remove Java, I only know Python"), set removeSkills: ["Java"].
-5. SEPARATE AI SUGGESTIONS FROM SELF-REPORTED FACTS:
-   - If you want to suggest complementary skills to learn (e.g., Docker, AWS) or potential roles, put them inside "aiSuggestions.suggestedSkillsToExplore" or "aiSuggestions.suggestedRoles".
-   - NEVER place AI suggestions into the student's self-reported "skills" array.
-6. AMBIGUITY & CLARIFICATIONS:
-   - If an answer is vague (e.g. "I do computer stuff"), set clarificationNeeded and ask for gentle clarification.
+   - When a user lists a skill (e.g. "I know Python and financial modeling"), extract proficiency as null.
+   - ONLY set proficiency ('exploring', 'practicing', or 'proficient') if the user explicitly stated their experience level.
+3. SUPPORT FOR WORKING PROFESSIONALS & NON-STUDENTS:
+   - Do NOT ask working professionals for college graduation years or college coursework. If they have job experience, their experience is primary.
+   - Support non-technical fields (finance, marketing, logistics, healthcare, design, operations, trades).
+4. SUPPORT FOR ABSENCE & SKIPS:
+   - If user states they don't have projects or work experience, set practicalExperience: { hasProjects: false, summaryNote: "No formal projects yet" }. Do NOT press them repeatedly.
+   - If user asks to skip a section, mark that section with skipped: true.
+5. CORRECTIONS & REMOVALS:
+   - If user corrects earlier details (e.g. "Actually I am a marketing manager", "Remove Java"), honor the update immediately.
+6. SEPARATE INFERRED AI SUGGESTIONS FROM DECLARED FACTS:
+   - Any suggested exploration avenues or potential capability gaps belong in "aiSuggestions". NEVER place AI suggestions into the user's declared "skills" or "goals".
+7. AMBIGUITY & CLARIFICATIONS:
+   - If an answer is unclear, set clarificationNeeded and ask for gentle clarification.
 
 CONVERSATION & QUESTION GUIDELINES:
-1. Warm & Practical: Acknowledge what the student shared in 1-2 concise, mentor-like sentences.
-2. Answering Student Queries: If they asked a career question (e.g., roadmap, placement tips), give a high-yield, compact answer first.
+1. Concise & Mentor-Like: Acknowledge what the user shared in 1-2 thoughtful sentences.
+2. Answering User Queries: If they ask a direct career question (e.g. how skills transfer, what a role entails), answer crisply before moving to profiling.
 3. NEXT QUESTION SELECTION:
-   - If a section is PARTIAL (e.g. degree is B.Tech, but major is missing), ask specifically for the missing sub-detail.
-   - Otherwise, select the next UNADDRESSED section following this priority:
-     1) Education / Major & Graduation Year
-     2) Technical Skills
-     3) Practical Experience (projects, coursework builds, or internships)
-     4) Interests & Preferred Work Environment
-     5) Career Goals & Target Roles
-   - NEVER ask for information that is already marked Complete, Explicitly Absent, or Skipped.
+   - If a section is PARTIAL, ask for the missing sub-detail.
+   - Otherwise, select the next UNADDRESSED section:
+     * Point A: Current role / professional background & education
+     * Skills & capabilities (technical, domain, or soft skills)
+     * Practical experience or work accomplishments
+     * Interests, work style, or problem spaces
+     * Point B: Destination role & timeline (if Career Decided) OR exploration focus & priorities (if Career Exploring)
+   - NEVER ask for information already marked Complete, Explicitly Absent, or Skipped.
    - Ask only ONE single question at a time.
 4. WHEN ALL SECTIONS ARE SATISFIED:
-   - Warmly celebrate completing the profile and invite the student to review the summary card!
+   - Celebrate completing the profile and invite the user to review their Point A -> Point B synthesis!
    - Set "activeQuestionCategory": "review".
 5. PROVIDE 2 to 4 "suggestedFollowUps" (relevant quick chips for easy tapping).
 
@@ -110,15 +121,57 @@ OUTPUT FORMAT:
 Return strictly a valid JSON object matching this schema:
 {
   "extractedProfile": {
-    "aboutYou": { "currentStage": string | null, "stageLabel": string | null, "skipped": boolean | null },
-    "education": { "degree": string | null, "field": string | null, "academicFocus": string[], "graduationYear": string | null },
+    "careerIntent": "career_decided" | "career_exploring" | "uncertain" | null,
+    "aboutYou": {
+      "currentStage": string | null,
+      "stageLabel": string | null,
+      "currentRole": string | null,
+      "yearsOfExperience": string | null,
+      "industry": string | null,
+      "skipped": boolean | null
+    },
+    "education": {
+      "degree": string | null,
+      "field": string | null,
+      "academicFocus": string[],
+      "graduationYear": string | null,
+      "certifications": string[],
+      "skipped": boolean | null
+    },
     "skills": [ { "name": string, "category": string, "proficiency": "exploring" | "practicing" | "proficient" | null } ],
     "removeSkills": string[],
     "skillsExplicitlyAbsent": boolean | null,
-    "practicalExperience": { "hasProjects": boolean | null, "skipped": boolean | null, "summaryNote": string | null, "projects": [ { "title": string, "description": string, "techStack": string[] } ] },
-    "interests": { "primaryTracks": string[], "workEnvironment": string | null, "preferredDomains": string[], "skipped": boolean | null },
-    "goals": { "targetRoles": string[], "topPriority": string | null, "timeline": string | null, "skipped": boolean | null },
-    "aiSuggestions": { "suggestedSkillsToExplore": string[], "suggestedRoles": string[], "clarificationNeeded": string | null }
+    "practicalExperience": {
+      "hasProjects": boolean | null,
+      "hasExperience": boolean | null,
+      "skipped": boolean | null,
+      "summaryNote": string | null,
+      "projects": [ { "title": string, "organizationOrContext": string, "description": string, "techStack": string[] } ]
+    },
+    "interests": {
+      "primaryTracks": string[],
+      "workEnvironment": string | null,
+      "preferredDomains": string[],
+      "motivations": string[],
+      "constraints": string[],
+      "skipped": boolean | null
+    },
+    "goals": {
+      "targetRoles": string[],
+      "destinationSummary": string | null,
+      "topPriority": string | null,
+      "timeline": string | null,
+      "transitionMotivations": string | null,
+      "capabilityGapsOrUncertainties": string[],
+      "skipped": boolean | null
+    },
+    "aiSuggestions": {
+      "suggestedSkillsToExplore": string[],
+      "suggestedRoles": string[],
+      "suggestedDirectionsToExplore": string[],
+      "potentialCapabilityGaps": string[],
+      "clarificationNeeded": string | null
+    }
   },
   "conversationalReply": string,
   "suggestedFollowUps": string[],
@@ -131,51 +184,51 @@ Return strictly a valid JSON object matching this schema:
  */
 function getDeterministicFallback(session: ProfileSession, userMessage: string): ExtractedPayload {
   const missing = session.missingFields;
-  const reply = `Got it, I've noted that down. Let's continue shaping your profile.`;
+  const reply = `Got it, I've noted that down. Let's continue charting your path from Point A to Point B.`;
 
-  if (missing.includes('education') || missing.includes('about_you')) {
+  if (missing.includes('about_you') || missing.includes('education')) {
     return {
-      conversationalReply: `${reply} What degree and major or branch are you currently studying, and what is your target graduation year?`,
-      suggestedFollowUps: ['B.Tech CSE (2026)', 'B.Tech IT (2027)', 'BCA / MCA', 'Recent Graduate'],
-      activeQuestionCategory: 'education',
+      conversationalReply: `${reply} Could you share a bit more about your current position or educational background? (e.g. your current role, field of study, or years of experience).`,
+      suggestedFollowUps: ['Working Professional', 'College Student', 'Career Switcher', 'Recent Graduate'],
+      activeQuestionCategory: 'about_you',
     };
   }
 
   if (missing.includes('skills')) {
     return {
-      conversationalReply: `${reply} What programming languages, tools, or frameworks have you worked with so far? (You can also mention if you are just starting out).`,
-      suggestedFollowUps: ['Python & SQL', 'React & JavaScript', 'Java & DSA', 'No coding skills yet'],
+      conversationalReply: `${reply} What key skills, tools, or domain capabilities do you currently possess or work with most frequently?`,
+      suggestedFollowUps: ['Technical & Programming', 'Business & Analytics', 'Management & Operations', 'Exploring from scratch'],
       activeQuestionCategory: 'skills',
     };
   }
 
   if (missing.includes('practical_experience')) {
     return {
-      conversationalReply: `${reply} Have you worked on any practical projects, coursework builds, or internships? (If you don't have projects yet, that's completely fine to state!)`,
-      suggestedFollowUps: ['I built a web project', 'No projects yet, focusing on theory', 'Skip this question'],
+      conversationalReply: `${reply} What practical experience, notable accomplishments, or projects have you worked on? (Feel free to skip if you are just starting out!)`,
+      suggestedFollowUps: ['Professional work experience', 'Personal / Academic projects', 'No formal experience yet (Skip)'],
       activeQuestionCategory: 'practical_experience',
     };
   }
 
   if (missing.includes('interests')) {
     return {
-      conversationalReply: `${reply} What tech problem spaces or domains interest you most? (e.g., Cloud, AI/ML, FinTech, Full-Stack)`,
-      suggestedFollowUps: ['Cloud & Distributed Systems', 'AI / ML Platforms', 'FinTech & Analytics', 'Skip for now'],
+      conversationalReply: `${reply} What industries, problem domains, or work environments appeal to you most?`,
+      suggestedFollowUps: ['Tech & AI Innovation', 'Finance & Business', 'Remote / Flexible Culture', 'Skip for now'],
       activeQuestionCategory: 'interests',
     };
   }
 
   if (missing.includes('goals')) {
     return {
-      conversationalReply: `${reply} What target job roles or placement aspirations are you working towards?`,
-      suggestedFollowUps: ['Software Engineer (SDE)', 'Data Engineer', 'Backend Developer', 'Frontend Developer'],
+      conversationalReply: `${reply} What is your target career destination (Point B), or are you actively exploring different directions?`,
+      suggestedFollowUps: ['I have a specific target role', 'I am exploring options', 'Looking to transition within 6 months'],
       activeQuestionCategory: 'goals',
     };
   }
 
   return {
-    conversationalReply: `Awesome! We have gathered all the key self-reported sections. Please review your profile summary below and let me know if anything needs updating!`,
-    suggestedFollowUps: ['Confirm Profile', 'Change my skills', 'Change my graduation year', 'Change target roles'],
+    conversationalReply: `Excellent! We have mapped out your core Point A to Point B profile. Please review your summary below and let me know if anything needs updating!`,
+    suggestedFollowUps: ['Confirm Profile', 'Adjust my target destination', 'Update my skills', 'Make a correction'],
     activeQuestionCategory: 'review',
   };
 }

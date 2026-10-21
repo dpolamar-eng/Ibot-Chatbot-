@@ -1,11 +1,15 @@
 import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
-import { config, isGeminiConfigured } from '../config.js';
+import { config, isGeminiConfigured, isSupabaseConfigured } from '../config.js';
 import {
   getOrCreateSession,
   confirmStudentProfile,
   resetSession,
 } from '../services/sessionStore.js';
 import { processStudentMessage } from '../services/extraction.js';
+import {
+  persistChatTurn,
+  confirmProfileInDb,
+} from '../services/supabase.js';
 
 interface ChatRequestBody {
   message: string;
@@ -22,13 +26,14 @@ interface ResetRequestBody {
 }
 
 export const chatRoutes: FastifyPluginAsync = async (fastify) => {
-  // 1. Health check endpoint to verify backend status & Gemini configuration
+  // 1. Health check endpoint to verify backend status & service configurations
   fastify.get('/api/health', async () => {
     return {
       status: 'ok',
       service: 'ibot-career-ladder-backend',
       timestamp: new Date().toISOString(),
       geminiConfigured: isGeminiConfigured(),
+      supabaseConfigured: isSupabaseConfigured(),
       model: config.geminiModel,
     };
   });
@@ -65,6 +70,17 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
 
         // Process message with Gemini extraction & dynamic follow-up selection
         const result = await processStudentMessage(message.trim(), session, structuredAnswer);
+
+        // Asynchronously persist to the 6-table Supabase schema without blocking HTTP response
+        persistChatTurn({
+          sessionId: result.session.sessionId,
+          userMessage: message.trim(),
+          assistantReply: result.reply,
+          profile: result.session.profile,
+          activeCategory: result.activeQuestionCategory,
+          suggestedFollowUps: result.suggestedFollowUps,
+          changeHistory: result.session.changeHistory,
+        }).catch((err) => fastify.log.error(err, 'Failed to persist turn to Supabase'));
 
         return reply.status(200).send({
           sessionId: result.session.sessionId,
@@ -104,6 +120,11 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
     async (request: FastifyRequest<{ Body: ConfirmRequestBody }>, reply: FastifyReply) => {
       const { sessionId } = request.body;
       const session = confirmStudentProfile(sessionId);
+
+      // Persist confirmed status and consent record to Supabase
+      confirmProfileInDb(session.sessionId).catch((err) =>
+        fastify.log.error(err, 'Failed to confirm profile in Supabase')
+      );
 
       return reply.status(200).send({
         status: 'confirmed',

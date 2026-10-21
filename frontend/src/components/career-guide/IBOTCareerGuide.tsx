@@ -36,13 +36,13 @@ export interface IBOTCareerGuideProps {
 }
 
 const STEP_TITLES: Record<number, string> = {
-  1: 'Career Stage & Timeline',
-  2: 'Education & Academic Focus',
-  3: 'Technical Skills & Capabilities',
-  4: 'Practical Experience & Projects',
+  1: 'Current Position (Point A)',
+  2: 'Education & Qualifications',
+  3: 'Skills & Capabilities',
+  4: 'Practical Experience & Accomplishments',
   5: 'Interests & Work Preferences',
-  6: 'Target Roles & Aspirations',
-  7: 'Career Discovery Results',
+  6: 'Career Destination & Goals (Point B)',
+  7: 'Career Synthesis & Review',
 };
 
 export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
@@ -50,7 +50,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
   mode = 'panel',
   isOpen = true,
   isFloating = false,
-  subtitle = 'Identify Phase • Guided Career Discovery',
+  subtitle = 'Discover where you are, explore where you want to go, and understand how to get there.',
   initialMode = 'guided',
   skipIntroAnimation = false,
   externalPrompt,
@@ -135,7 +135,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       const confirmMsg: ChatMessage = {
         id: `confirm-${Date.now()}`,
         sender: 'assistant',
-        text: '🎉 **Profile Confirmed!**\n\nYour self-reported career profile has been verified and safely saved in your session. All data is ready for the Identify stage evaluation.',
+        text: '🎉 **Career Profile Confirmed!**\n\nYour self-reported Point A to Point B career profile has been verified and safely saved in your session. All capabilities and career aspirations are captured.',
         timestamp: getCurrentTimeString(),
       };
       setMessages((prev) => [...prev, confirmMsg]);
@@ -558,7 +558,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
             placeholder={
               isGuidedMode && currentStepIndex <= 6
                 ? 'Select answer above, or type a custom question...'
-                : 'Ask about career roadmaps, skills, placements, resume...'
+                : 'Ask about career paths, skills, transitions, roadmaps...'
             }
           />
         </div>

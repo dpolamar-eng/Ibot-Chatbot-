@@ -22,10 +22,10 @@ const LETTERS = ['I', 'B', 'O', 'T'];
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
   className,
   mode = 'panel',
-  subtitle = 'Identify Phase • Guided Career Discovery',
+  subtitle = 'Discover where you are, explore where you want to go, and understand how to get there.',
   currentStep = 1,
   totalSteps = 6,
-  stepTitle = 'Career Stage & Timeline',
+  stepTitle = 'Current Position (Point A)',
   isGuidedMode = true,
   completionPercentage,
   onToggleGuidedMode,

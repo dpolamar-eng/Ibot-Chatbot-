@@ -9,44 +9,44 @@ interface GoalSelectorProps {
 }
 
 const TARGET_ROLES = [
-  'Software Development Engineer (SDE-1)',
-  'Full-Stack Developer',
-  'Backend Engineer (Python / Go / Java)',
-  'Frontend Engineer (React / TypeScript)',
-  'Data Analyst / BI Specialist',
-  'Associate AI / Machine Learning Engineer',
-  'Cloud & DevOps Engineer',
-  'Open to General Tech Roles',
+  'Applied AI / ML Engineer',
+  'Software Development Engineer',
+  'Product Manager / Tech Lead',
+  'Financial / Investment Analyst',
+  'Data & Business Intelligence Analyst',
+  'Marketing & Growth Specialist',
+  'Operations & Supply Chain Lead',
+  'Exploring Viable Roles (Career Exploring)',
 ];
 
 const PRIORITIES = [
   {
-    id: 'dsa_interviews',
-    title: 'Mastering DSA & Coding Interviews',
-    desc: 'LeetCode patterns, two-pointers, graphs, DP to pass technical OA rounds.',
+    id: 'capability_gap',
+    title: 'Bridging Capability Gaps',
+    desc: 'Mastering the critical tools, technologies, and methodologies required for target role.',
   },
   {
-    id: 'production_projects',
-    title: 'Building 2 High-Yield Projects',
-    desc: 'Deploying end-to-end full-stack or ML systems with Docker and live demos.',
+    id: 'career_exploration',
+    title: 'Exploring & Comparing Paths',
+    desc: 'Analyzing high-growth industry directions that fit my background, strengths, and goals.',
   },
   {
-    id: 'resume_ats',
-    title: 'ATS Resume Review & Bullet Points',
-    desc: 'Restructuring profile and metrics to pass corporate ATS scanner algorithms.',
+    id: 'proof_of_work',
+    title: 'Building Proof of Capability',
+    desc: 'Creating tangible projects, portfolio evidence, or case studies to demonstrate readiness.',
   },
   {
-    id: 'track_clarity',
-    title: 'Clarifying Which Tech Track to Pick',
-    desc: 'Understanding industry demand and matching with personal aptitude.',
+    id: 'career_pivot',
+    title: 'Navigating a Career Pivot',
+    desc: 'Translating existing professional strengths into a successful transition to a new domain.',
   },
 ];
 
 const TIMELINES = [
   'Immediate (Next 30–60 days)',
-  'This Semester (3–6 months)',
-  'Next Academic Year (6–12 months)',
-  'Long-Term Horizon',
+  'Near Term (3–6 months)',
+  'Within 1 Year (6–12 months)',
+  'Exploratory / Long-Term',
 ];
 
 export const GoalSelector: React.FC<GoalSelectorProps> = ({
@@ -145,7 +145,7 @@ export const GoalSelector: React.FC<GoalSelectorProps> = ({
       {/* 3. Timeline */}
       <div>
         <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-          Placement / Goal Timeline
+          Target Career Timeline
         </label>
         <div className="flex flex-wrap gap-2">
           {TIMELINES.map((t) => {

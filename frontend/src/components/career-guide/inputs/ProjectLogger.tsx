@@ -55,8 +55,8 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
       <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
         <FolderGit2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
         <p leading-normal>
-          Projects, internships, or capstone deliverables help identify practical readiness.
-          If you are still learning fundamentals and don&apos;t have projects yet, you can skip this section!
+          Practical accomplishments, professional achievements, or portfolio projects demonstrate real-world capability.
+          If you are focusing on fundamentals or just getting started, you can skip this section!
         </p>
       </div>
 
@@ -88,24 +88,26 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
               </div>
 
               {/* Stack pills */}
-              <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
-                <span className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
-                  Stack:
-                </span>
-                {proj.techStack.map((tech, i) => (
-                  <span
-                    key={i}
-                    className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-[11px] font-medium"
-                  >
-                    {tech}
+              {proj.techStack && proj.techStack.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-slate-100">
+                  <span className="text-[10.5px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
+                    Tools / Focus:
                   </span>
-                ))}
-                {proj.outcome && (
-                  <span className="text-[11px] text-emerald-700 ml-auto font-medium">
-                    ✓ {proj.outcome}
-                  </span>
-                )}
-              </div>
+                  {proj.techStack.map((tech, i) => (
+                    <span
+                      key={i}
+                      className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]"
+                    >
+                      {tech}
+                    </span>
+                  ))}
+                  {proj.outcome && (
+                    <span className="text-[11px] text-emerald-700 ml-auto font-medium">
+                      ✓ {proj.outcome}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -209,7 +211,7 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-800 hover:border-[#2552f4] hover:text-[#2552f4] text-xs font-semibold shadow-2xs hover:shadow-xs transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-[#2552f4]" />
-            <span>Add a Project or Internship</span>
+            <span>Add Project or Accomplishment</span>
           </button>
 
           {/* Explicit Skip option for optional questions */}
@@ -219,7 +221,7 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
               onClick={onSkip}
               className="text-xs text-slate-500 hover:text-slate-800 font-medium underline-offset-4 hover:underline cursor-pointer flex items-center gap-1"
             >
-              <span>Skip for now (I don&apos;t have projects yet)</span>
+              <span>Skip for now (No formal projects yet)</span>
               <ArrowRight className="w-3 h-3" />
             </button>
           )}

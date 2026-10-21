@@ -13,7 +13,7 @@ type NonNullSkillProficiency = NonNullable<SkillProficiency>;
 
 const PROFICIENCY_LABELS: Record<NonNullSkillProficiency, { label: string; color: string }> = {
   exploring: { label: 'Exploring', color: 'bg-slate-100 text-slate-700' },
-  practicing: { label: 'Built Projects', color: 'bg-blue-50 text-blue-700 border-blue-200' },
+  practicing: { label: 'Hands-on', color: 'bg-blue-50 text-blue-700 border-blue-200' },
   proficient: { label: 'Proficient', color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
 };
 
@@ -78,7 +78,7 @@ export const SkillSelector: React.FC<SkillSelectorProps> = ({
       {
         id: `custom-${Date.now()}`,
         name: trimmed,
-        category: 'core',
+        category: 'other',
         proficiency: 'practicing',
       },
     ]);
@@ -91,8 +91,8 @@ export const SkillSelector: React.FC<SkillSelectorProps> = ({
       <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-xs text-slate-600">
         <Sparkles className="w-4 h-4 text-[#2552f4] shrink-0 mt-0.5" />
         <p leading-normal>
-          Select technologies you are familiar with or have used in coursework, tutorials, or projects.
-          Click any selected skill to change your comfort level.
+          Select skills, tools, domain competencies, or specialized capabilities you work with or know best.
+          Click any selected skill badge to adjust your comfort level.
         </p>
       </div>
 

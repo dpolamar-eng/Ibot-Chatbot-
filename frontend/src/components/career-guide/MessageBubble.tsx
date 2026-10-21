@@ -107,24 +107,24 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     if (!message.stepIndex || !onSubmitInteractiveAnswer) return;
 
     if (message.inputType === 'stage_select') {
-      const summary = `I am currently in ${stageLabel}, targeting graduation/placements in ${gradYear}.`;
+      const summary = `I am currently in ${stageLabel}, targeting timeline of ${gradYear}.`;
       onSubmitInteractiveAnswer(message.stepIndex, summary, { stageId, stageLabel, gradYear });
     } else if (message.inputType === 'education_select') {
       const focusText = education.academicFocus.length > 0 ? ` with focus in ${education.academicFocus.join(', ')}` : '';
-      const summary = `My major is ${education.field}${focusText}.`;
+      const summary = `My educational background is ${education.degree ? `${education.degree} in ` : ''}${education.field}${focusText}.`;
       onSubmitInteractiveAnswer(message.stepIndex, summary, { education });
     } else if (message.inputType === 'skills_select') {
       const skillNames = skills.map((s) => s.name).join(', ');
-      const summary = `My technical skills include: ${skillNames || 'Python, SQL'}.`;
+      const summary = `My capabilities and skills include: ${skillNames || 'Python, SQL'}.`;
       onSubmitInteractiveAnswer(message.stepIndex, summary, { skills });
     } else if (message.inputType === 'projects_entry') {
       const projTitles = projects.map((p) => p.title).join(', ');
       const summary = projects.length > 0
-        ? `I have built the following projects: ${projTitles}.`
-        : `I don't have practical projects yet; focusing on building core fundamentals.`;
+        ? `My practical accomplishments and projects include: ${projTitles}.`
+        : `I don't have practical projects yet; focusing on building core capabilities.`;
       onSubmitInteractiveAnswer(message.stepIndex, summary, { projects });
     } else if (message.inputType === 'interests_select') {
-      const summary = `I am interested in ${interests.primaryTracks.join(', ')} engineering in a ${interests.workEnvironment} environment.`;
+      const summary = `I am interested in ${interests.primaryTracks.join(', ')} in a ${interests.workEnvironment} work environment.`;
       onSubmitInteractiveAnswer(message.stepIndex, summary, { interests });
     } else if (message.inputType === 'goals_select') {
       const summary = `My target role is ${goals.targetRoles.join(', ')} with priority on ${goals.topPriority}.`;
@@ -134,7 +134,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const handleSkipStep = () => {
     if (!message.stepIndex || !onSubmitInteractiveAnswer) return;
-    const summary = `Skipped project details for now; focusing on fundamentals.`;
+    const summary = `Skipped project details for now; focusing on core capabilities.`;
     onSubmitInteractiveAnswer(message.stepIndex, summary, { skipped: true });
   };
 
@@ -370,6 +370,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
              ========================================================================= */}
           {isAssistant && message.inputType === 'summary_card' && (() => {
             const currentProfile = profile || message.stepData || {};
+            const careerIntent = currentProfile.careerIntent;
             const aboutYou = currentProfile.aboutYou || {};
             const edu = currentProfile.education || {};
             const skillsList = currentProfile.skills || [];
@@ -421,17 +422,34 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <div className="mt-4 pt-3 border-t border-slate-100 space-y-4 animate-in fade-in duration-300">
                 <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/90 border border-slate-200 shadow-xs space-y-4">
                   {/* Card Header */}
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-200/80">
+                  <div className="flex flex-wrap items-center justify-between pb-3 border-b border-slate-200/80 gap-2">
                     <div className="flex items-center gap-2">
                       <div className="p-1.5 rounded-lg bg-blue-100 text-[#2552f4]">
                         <CheckCircle2 className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="text-sm font-bold text-slate-900 leading-tight">
-                          Self-Reported Career Profile
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-sm font-bold text-slate-900 leading-tight">
+                            Verified Career Profile
+                          </h4>
+                          {careerIntent === 'career_decided' && (
+                            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                              🎯 Career Decided
+                            </span>
+                          )}
+                          {careerIntent === 'career_exploring' && (
+                            <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200">
+                              🧭 Career Exploring
+                            </span>
+                          )}
+                          {careerIntent === 'uncertain' && (
+                            <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                              🔄 Transitioning / Uncertain
+                            </span>
+                          )}
+                        </div>
                         <span className="text-[11px] text-slate-500">
-                          Verified candidate self-report • Factual data only
+                          Declared self-report • Point A to Point B career mapping
                         </span>
                       </div>
                     </div>
@@ -447,34 +465,53 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     )}
                   </div>
 
-                  {/* 1. About You & Education */}
+                  {/* 1. Point A: Current Position & Stage */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="p-3 rounded-xl bg-white border border-slate-200/90">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                          1. Career Stage & Timeline
+                          Point A: Current Position
                         </span>
                         {renderBadge(getSectionState('about_you'))}
                       </div>
                       <p className="font-semibold text-slate-800">
-                        {aboutYou.stageLabel || aboutYou.currentStage || 'Not specified'}
+                        {aboutYou.currentRole ? (
+                          <>
+                            {aboutYou.currentRole}
+                            {aboutYou.yearsOfExperience ? ` • ${aboutYou.yearsOfExperience}` : ''}
+                          </>
+                        ) : (
+                          aboutYou.stageLabel || aboutYou.currentStage || 'Not specified'
+                        )}
                       </p>
-                      <p className="text-[11.5px] text-slate-500 mt-0.5">
-                        Target Grad Year: {edu.graduationYear || aboutYou.graduationYear || 'Not specified'}
-                      </p>
+                      {aboutYou.industry && (
+                        <p className="text-[11.5px] text-slate-600 mt-0.5">
+                          Industry: {aboutYou.industry}
+                        </p>
+                      )}
+                      {(aboutYou.stageLabel || aboutYou.currentStage) && aboutYou.currentRole && (
+                        <p className="text-[11.5px] text-slate-500 mt-0.5">
+                          Stage: {aboutYou.stageLabel || aboutYou.currentStage}
+                        </p>
+                      )}
+                      {(edu.graduationYear || aboutYou.graduationYear) && (
+                        <p className="text-[11.5px] text-slate-500 mt-0.5">
+                          Target Timeline: {edu.graduationYear || aboutYou.graduationYear}
+                        </p>
+                      )}
                     </div>
 
                     <div className="p-3 rounded-xl bg-white border border-slate-200/90">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider block">
-                          2. Education & Coursework
+                          Education & Qualifications
                         </span>
                         {renderBadge(getSectionState('education'))}
                       </div>
                       <p className="font-semibold text-slate-800">
-                        {edu.degree || <span className="text-amber-600 font-normal italic">Degree unspecified</span>}
-                        {' in '}
-                        {edu.field || <span className="text-amber-600 font-normal italic">Field unspecified</span>}
+                        {edu.degree || (edu.field ? '' : <span className="text-amber-600 font-normal italic">Education unspecified</span>)}
+                        {edu.degree && edu.field ? ' in ' : ''}
+                        {edu.field || ''}
                       </p>
                       {edu.academicFocus && edu.academicFocus.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1.5">
@@ -485,20 +522,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                           ))}
                         </div>
                       )}
+                      {edu.certifications && edu.certifications.length > 0 && (
+                        <p className="text-[11px] text-slate-600 mt-1">
+                          <span className="font-medium text-slate-700">Certifications: </span>
+                          {edu.certifications.join(', ')}
+                        </p>
+                      )}
                     </div>
                   </div>
 
-                  {/* 2. Self-Reported Skills */}
+                  {/* 2. Self-Reported Capabilities & Skills */}
                   <div className="p-3 rounded-xl bg-white border border-slate-200/90 text-xs">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
-                          3. Self-Reported Technical Skills
+                          Self-Reported Capabilities & Skills
                         </span>
                         {renderBadge(getSectionState('skills'))}
                       </div>
                       <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full font-medium">
-                        Self-Reported • No AI Guessing
+                        Declared • Verified Facts Only
                       </span>
                     </div>
                     {skillsList.length > 0 ? (
@@ -509,6 +552,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50/80 border border-blue-200 text-[#2552f4] font-medium text-[11.5px]"
                           >
                             <span>{s.name}</span>
+                            {s.category && (
+                              <span className="text-[9.5px] text-slate-400 capitalize">
+                                [{s.category}]
+                              </span>
+                            )}
                             {s.proficiency ? (
                               <span className="text-[9.5px] opacity-75 capitalize font-normal">
                                 ({s.proficiency})
@@ -523,22 +571,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       </div>
                     ) : skillsAbsent ? (
                       <div className="p-2 rounded-lg bg-slate-100/70 text-slate-600 text-[11.5px]">
-                        ✓ Confirmed: Starting out with no specific technical skills yet.
+                        ✓ Confirmed: Starting out with no specific capabilities listed yet.
                       </div>
                     ) : skillsSkipped ? (
                       <div className="p-2 rounded-lg bg-slate-100/70 text-slate-600 text-[11.5px]">
-                        Skills section skipped by student.
+                        Skills section skipped by user.
                       </div>
                     ) : (
-                      <span className="text-slate-400 italic">No skills reported yet</span>
+                      <span className="text-slate-400 italic">No capabilities reported yet</span>
                     )}
                   </div>
 
-                  {/* 3. Practical Experience / Projects */}
+                  {/* 3. Practical Accomplishments & Experience */}
                   <div className="p-3 rounded-xl bg-white border border-slate-200/90 text-xs">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
-                        4. Practical Experience & Projects
+                        Practical Accomplishments & Experience
                       </span>
                       {renderBadge(getSectionState('projects'))}
                     </div>
@@ -562,34 +610,46 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       </div>
                     ) : pe.hasProjects === false ? (
                       <div className="p-2 rounded-lg bg-slate-100/70 text-slate-600 text-[11.5px]">
-                        ✓ Confirmed: No practical projects yet (focusing on academic coursework and fundamental concepts).
+                        ✓ Confirmed: No practical projects yet (focusing on core domain fundamentals).
                       </div>
                     ) : pe.skipped ? (
                       <div className="p-2 rounded-lg bg-slate-100/70 text-slate-600 text-[11.5px]">
-                        Practical experience section skipped by student.
+                        Practical experience section skipped by user.
                       </div>
                     ) : (
                       <span className="text-slate-400 italic">Not shared yet</span>
                     )}
                   </div>
 
-                  {/* 4. Interests & Goals */}
+                  {/* 4. Interests & Point B Destination */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div className="p-3 rounded-xl bg-white border border-slate-200/90">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
-                          5. Interests & Environment
+                          Interests & Work Preferences
                         </span>
                         {renderBadge(getSectionState('interests'))}
                       </div>
                       <p className="text-slate-700">
-                        <span className="font-medium text-slate-900">Tracks: </span>
+                        <span className="font-medium text-slate-900">Domains / Tracks: </span>
                         {interests.primaryTracks?.join(', ') || 'Not specified'}
                       </p>
                       {interests.workEnvironment && (
                         <p className="text-slate-700 mt-1">
-                          <span className="font-medium text-slate-900">Style: </span>
+                          <span className="font-medium text-slate-900">Work Style: </span>
                           {interests.workEnvironment}
+                        </p>
+                      )}
+                      {interests.motivations && interests.motivations.length > 0 && (
+                        <p className="text-slate-700 mt-1">
+                          <span className="font-medium text-slate-900">Motivations: </span>
+                          {interests.motivations.join(', ')}
+                        </p>
+                      )}
+                      {interests.constraints && interests.constraints.length > 0 && (
+                        <p className="text-slate-700 mt-1">
+                          <span className="font-medium text-slate-900">Constraints: </span>
+                          {interests.constraints.join(', ')}
                         </p>
                       )}
                     </div>
@@ -597,38 +657,69 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     <div className="p-3 rounded-xl bg-white border border-slate-200/90">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
-                          6. Career Goals & Target Roles
+                          Point B: Career Destination
                         </span>
                         {renderBadge(getSectionState('goals'))}
                       </div>
-                      <p className="text-slate-700">
-                        <span className="font-medium text-slate-900">Target Roles: </span>
-                        {goals.targetRoles?.join(', ') || 'Not specified'}
-                      </p>
+                      {careerIntent === 'career_exploring' ? (
+                        <div>
+                          <p className="text-purple-700 font-semibold mb-1">
+                            🧭 Exploring Potential Pathways
+                          </p>
+                          <p className="text-slate-700">
+                            <span className="font-medium text-slate-900">Directions Considered: </span>
+                            {goals.targetRoles?.length ? goals.targetRoles.join(', ') : 'Open to exploration'}
+                          </p>
+                          {goals.destinationSummary && (
+                            <p className="text-[11.5px] text-slate-600 mt-1">
+                              {goals.destinationSummary}
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-slate-700">
+                            <span className="font-medium text-slate-900">Target Role(s): </span>
+                            {goals.targetRoles?.join(', ') || goals.destinationSummary || 'Not specified'}
+                          </p>
+                          {goals.transitionMotivations && goals.transitionMotivations.length > 0 && (
+                            <p className="text-slate-700 mt-1">
+                              <span className="font-medium text-slate-900">Why Transition: </span>
+                              {goals.transitionMotivations.join(', ')}
+                            </p>
+                          )}
+                          {goals.capabilityGapsOrUncertainties && goals.capabilityGapsOrUncertainties.length > 0 && (
+                            <p className="text-slate-700 mt-1">
+                              <span className="font-medium text-slate-900">Gaps/Uncertainties: </span>
+                              {goals.capabilityGapsOrUncertainties.join(', ')}
+                            </p>
+                          )}
+                        </div>
+                      )}
                       {goals.topPriority && (
                         <p className="text-slate-700 mt-1">
-                          <span className="font-medium text-slate-900">Priority: </span>
+                          <span className="font-medium text-slate-900">Top Priority: </span>
                           {goals.topPriority}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  {/* Separate AI Suggestions Box */}
+                  {/* Separate AI Inferred Hypotheses Box */}
                   {aiSuggestions && (aiSuggestions.suggestedSkillsToExplore?.length > 0 || aiSuggestions.suggestedRoles?.length > 0 || aiSuggestions.clarificationNeeded) && (
                     <div className="p-3.5 rounded-xl bg-gradient-to-br from-indigo-50/70 via-white to-purple-50/50 border border-indigo-200/80 shadow-xs space-y-2.5">
                       <div className="flex items-center justify-between pb-1.5 border-b border-indigo-100">
                         <div className="flex items-center gap-1.5 text-indigo-900 font-bold text-xs">
                           <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>AI Discovery Suggestions</span>
+                          <span>AI Career Hypotheses & Exploration</span>
                         </div>
                         <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100/80 px-2 py-0.5 rounded-full border border-indigo-200">
-                          Suggestions Only • Not Part of Factual Profile
+                          Inferred Data • Not Part of Factual Profile
                         </span>
                       </div>
 
                       <p className="text-[11px] text-slate-600 leading-relaxed">
-                        These are potential exploration avenues inferred by AI based on your interests. They are not confirmed on your profile unless you choose to add them.
+                        These are potential exploration avenues and capability hypotheses inferred by AI based on your background and conversation. They are strictly separate from your declared facts.
                       </p>
 
                       {aiSuggestions.clarificationNeeded && (
@@ -641,7 +732,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       {aiSuggestions.suggestedSkillsToExplore && aiSuggestions.suggestedSkillsToExplore.length > 0 && (
                         <div className="text-xs">
                           <span className="text-[10.5px] font-bold text-indigo-950 uppercase tracking-wider block mb-1">
-                            Skills to Consider Exploring:
+                            Capabilities to Consider Exploring:
                           </span>
                           <div className="flex flex-wrap gap-1.5">
                             {aiSuggestions.suggestedSkillsToExplore.map((sk: string, i: number) => (
@@ -663,7 +754,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       {aiSuggestions.suggestedRoles && aiSuggestions.suggestedRoles.length > 0 && (
                         <div className="text-xs">
                           <span className="text-[10.5px] font-bold text-indigo-950 uppercase tracking-wider block mb-1">
-                            Potential Target Roles to Consider:
+                            Potential Career Destinations to Consider:
                           </span>
                           <div className="flex flex-wrap gap-1.5">
                             {aiSuggestions.suggestedRoles.map((role: string, i: number) => (
@@ -683,7 +774,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       )}
 
                       <div className="text-[10.5px] text-slate-500 italic pt-1 border-t border-indigo-100/60">
-                        Note: No automated readiness scores or interview ratings are generated.
+                        Note: Career Ladder does not generate unverified readiness scores or artificial match percentages.
                       </div>
                     </div>
                   )}
@@ -694,7 +785,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                       {isConfirmed ? (
                         <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 w-full">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Profile verified and confirmed by student. Ready for Identify evaluation.</span>
+                          <span>Profile verified and confirmed. Ready for personalized career guidance.</span>
                         </div>
                       ) : (
                         <>

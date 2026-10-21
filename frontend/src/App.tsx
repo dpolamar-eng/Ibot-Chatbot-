@@ -26,7 +26,7 @@ export default function App() {
         <IBOTCareerGuide
           key={resetKey}
           mode="panel"
-          subtitle="Identify Phase • Career Discovery & Profile Mapping"
+          subtitle="Discover where you are, explore where you want to go, and understand how to get there."
           onRefresh={() => setResetKey((k) => k + 1)}
           className="h-full w-full border-0 rounded-none shadow-none"
         />

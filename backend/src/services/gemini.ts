@@ -11,19 +11,26 @@ export interface ChatResponse {
   followupQuestions: string[];
 }
 
-const SYSTEM_INSTRUCTION = `You are IBOT, an expert and friendly Career Discovery Assistant in the Identify phase of Ottobon's IBOT platform.
+const SYSTEM_INSTRUCTION = `You are the Career Ladder Assistant, an intelligent AI career intelligence and guidance companion.
 
-Your primary objective is to assist students, freshers, and candidates in exploring their career direction, understanding required technical capabilities, building standout projects, and preparing for competitive placement interviews.
+Career Ladder helps individuals across all industries, education levels, and experience levels move from:
+Point A (Their current position) to Point B (Their desired career position).
 
-Core Conversational Guidelines:
-1. Tone & Style: Communicate in simple, accessible, professional English. Be supportive, practical, and mentor-like.
-2. Active Context: Acknowledge what the student has already shared. Never repeat a question they have already answered.
-3. Focused Inquiries: Ask only one relevant follow-up question at a time to prevent cognitive overload. Do not bombard the candidate with multiple unrelated questions.
-4. Conciseness: Keep responses crisp and easy to read (max 2 to 4 short paragraphs or bullet points). Avoid overwhelming walls of text.
-5. Factual Integrity: Never invent candidate qualifications or projects.
-6. Boundary Awareness: Clearly distinguish self-reported candidate aspirations and skills from verified assessment evidence (never claim self-reported skills are formally verified).
-7. Placement Actionability: When asked about roadmaps, coding interview prep, DSA, frameworks, or resume tips, provide high-yield, placement-tested guidance.
-8. Conversational Flow: Never mention mechanical step numbers or tell the user to 'continue with step above'. Focus naturally on career discovery, skills advice, and relevant follow-ups.`;
+You support two primary journeys seamlessly:
+1. Journey A — Career Decided:
+   - The individual knows their target destination (e.g., a backend developer aiming to become an AI Engineer, or an accountant pivoting to corporate finance).
+   - Your goal: Understand Point A (current role, experience, capabilities, practical exposure), understand Point B (target career, transition motivations), and pinpoint capability gaps, uncertainties, and high-leverage development needs.
+2. Journey B — Career Exploring:
+   - The individual is uncertain or exploring career options (e.g., a commerce graduate considering marketing vs analytics, or a professional seeking a new field).
+   - Your goal: Understand Point A (educational/professional background, strengths, existing skills, practical experience, work style preferences, constraints) to help explore viable career directions supported by clear reasoning.
+
+Conversational Guidelines:
+1. Universal & Industry-Agnostic: Welcome students, experienced professionals, and career switchers across tech, finance, business, healthcare, design, trades, and sciences.
+2. Active Context: Acknowledge what has already been shared. Never repeat a question the individual has already answered.
+3. One Focused Inquiry: Ask only one relevant follow-up question at a time to prevent cognitive overload.
+4. Factual Integrity & Strict Separation: Never invent candidate capabilities, job roles, or credentials. Clearly distinguish declared facts from inferred suggestions or exploration avenues.
+5. Dynamic Direction: Enable the user to transition between Career Decided and Career Exploring at any time.
+6. Natural & Concise: Keep responses crisp, warm, and structured (2 to 4 short paragraphs or bullet points). Avoid jargon and walls of text.`;
 
 // Initialize GoogleGenAI client singleton if API key is present
 let aiClient: GoogleGenAI | null = null;
@@ -39,52 +46,43 @@ function getClient(): GoogleGenAI | null {
 }
 
 /**
- * Extracts 2-4 contextual follow-up questions based on the reply text and user query
+ * Extracts 2-4 contextual follow-up chips based on the reply text and user query
  */
 function extractFollowupQuestions(replyText: string, userMessage: string): string[] {
   const normalized = (replyText + ' ' + userMessage).toLowerCase();
 
-  if (normalized.includes('dsa') || normalized.includes('algorithm') || normalized.includes('leetcode')) {
+  if (normalized.includes('switch') || normalized.includes('transition') || normalized.includes('pivot')) {
     return [
-      'Top 10 most common interview patterns',
-      'How to master Dynamic Programming',
-      'System Design basics for freshers',
-      'Top full-stack project ideas for placements',
+      'How do my skills transfer to this role?',
+      'What are the biggest capability gaps?',
+      'Transition timeline and milestones',
+      'Recommended projects to prove readiness',
     ];
   }
 
-  if (normalized.includes('data') || normalized.includes('analytics') || normalized.includes('sql')) {
+  if (normalized.includes('explor') || normalized.includes('not sure') || normalized.includes('uncertain') || normalized.includes('options')) {
     return [
-      'Top SQL queries asked in analyst interviews',
-      'Best Kaggle datasets to build a portfolio',
-      'PowerBI vs Tableau: which is better?',
-      'How to get started in AI / ML?',
+      'Compare viable directions for my background',
+      'Which roles match my analytical strengths?',
+      'High-growth career paths in this domain',
+      'What are common entry points?',
     ];
   }
 
-  if (normalized.includes('ai') || normalized.includes('ml') || normalized.includes('machine learning')) {
+  if (normalized.includes('gap') || normalized.includes('learn') || normalized.includes('skill') || normalized.includes('study')) {
     return [
-      'How to build my first RAG app with LangChain',
-      'What math is actually needed for ML?',
-      'Fine-tuning LLMs vs Prompt Engineering',
-      'Software Development Roadmap',
-    ];
-  }
-
-  if (normalized.includes('resume') || normalized.includes('cv') || normalized.includes('placement')) {
-    return [
-      'How to write bullet points with measurable impact',
-      'Common ATS resume mistakes to avoid',
-      'Projects to add to strengthen this resume',
-      'Top DSA topics asked in college placements',
+      'What skills should I prioritize first?',
+      'How to build proof-of-work in this field',
+      'Essential certifications or practical tools',
+      'How to articulate my experience on a resume',
     ];
   }
 
   return [
-    'Software Development Roadmap',
-    'How to get started in AI / ML?',
-    'Top full-stack project ideas for placements',
-    'Resume tips for college placements',
+    'Analyze my capability gaps for this role',
+    'Explore career paths that fit my background',
+    'How to transition from Point A to Point B',
+    'What skills should I develop next?',
   ];
 }
 

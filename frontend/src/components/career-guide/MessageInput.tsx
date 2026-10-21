@@ -56,10 +56,10 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       setIsRecording(true);
       // Simulate real-time voice speech-to-text typing
       const sampleQueries = [
-        'How do I prepare for campus placements in 2026?',
-        'Give me the best roadmap for AI & Machine Learning.',
-        'Review my resume for Software Engineering roles.',
-        'What are the most common coding interview questions?',
+        'How do I transition from backend development to AI engineering?',
+        'Give me the best roadmap for moving into product management.',
+        'Review my capabilities and experience for high-growth roles.',
+        'I am exploring careers in data and finance; what paths fit my background?',
       ];
       const randomQuery = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
       

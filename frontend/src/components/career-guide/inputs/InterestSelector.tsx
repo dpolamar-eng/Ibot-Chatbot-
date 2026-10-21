@@ -10,42 +10,42 @@ interface InterestSelectorProps {
 
 const PROBLEM_SPACES = [
   {
-    id: 'web_systems',
-    title: 'Web & Distributed Systems',
-    description: 'Scalable APIs, backend databases, client architecture & high-throughput systems.',
-    icon: Code,
-  },
-  {
-    id: 'ai_ml',
-    title: 'Applied AI & Machine Learning',
-    description: 'LLM agents, RAG pipelines, predictive models & intelligent automations.',
+    id: 'ai_tech',
+    title: 'Applied AI & Tech Systems',
+    description: 'Software engineering, AI automation, cloud platforms & scalable digital products.',
     icon: Cpu,
   },
   {
-    id: 'data_analytics',
-    title: 'Data & Business Intelligence',
-    description: 'SQL queries, analytics pipelines, metric modeling & interactive dashboards.',
+    id: 'finance_analytics',
+    title: 'Finance & Business Analytics',
+    description: 'Financial analysis, quantitative modeling, metrics dashboards & market economics.',
     icon: Database,
   },
   {
-    id: 'cloud_devops',
-    title: 'Cloud & Infrastructure',
-    description: 'Docker containers, Kubernetes, CI/CD automation & system reliability.',
+    id: 'product_growth',
+    title: 'Product Strategy & Growth',
+    description: 'Roadmapping, customer discovery, market positioning & user adoption.',
+    icon: Code,
+  },
+  {
+    id: 'ops_systems',
+    title: 'Operations & Process Scale',
+    description: 'Workflow efficiency, supply chain, cross-functional execution & organizational scale.',
     icon: Cloud,
   },
   {
-    id: 'mobile_cross',
-    title: 'Mobile & User Applications',
-    description: 'Cross-platform app development, mobile SDKs & fluid user interactions.',
+    id: 'creative_media',
+    title: 'Design, UX & Creative Media',
+    description: 'User experience research, interface design, brand storytelling & content strategy.',
     icon: Smartphone,
   },
 ];
 
 const ENVIRONMENTS = [
-  { id: 'startups', label: 'Fast-Paced Startups', desc: 'Broad ownership, shipping quickly' },
-  { id: 'enterprise', label: 'Established Enterprise Tech', desc: 'Structured scale, mentorship, systems' },
-  { id: 'research', label: 'R&D / Deep Tech', desc: 'Core algorithms, cutting-edge exploration' },
-  { id: 'open', label: 'Open to All Environments', desc: 'Focusing primarily on role & team learning' },
+  { id: 'startups', label: 'High-Growth Startup', desc: 'Broad ownership, high speed, dynamic impact' },
+  { id: 'enterprise', label: 'Established Enterprise', desc: 'Structured scale, strong mentorship, global reach' },
+  { id: 'remote_flexible', label: 'Remote-First / Flexible', desc: 'High autonomy, outcome-focused environment' },
+  { id: 'open', label: 'Open to All Environments', desc: 'Prioritizing team alignment and career growth' },
 ];
 
 export const InterestSelector: React.FC<InterestSelectorProps> = ({

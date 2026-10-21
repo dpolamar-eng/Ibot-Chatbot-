@@ -1,6 +1,6 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { config, isGeminiConfigured } from './config.js';
+import { config, isGeminiConfigured, isSupabaseConfigured } from './config.js';
 import { chatRoutes } from './routes/chat.js';
 
 const app = Fastify({
@@ -43,6 +43,11 @@ async function start() {
     app.log.info(
       `🔑 Gemini API Key Status: ${
         isGeminiConfigured() ? 'Configured ✅' : 'Not Configured (using fallback guidance) ⚠️'
+      }`
+    );
+    app.log.info(
+      `🗄️  Supabase Database Status: ${
+        isSupabaseConfigured() ? 'Configured ✅' : 'Pending configuration / Tables setup ⚠️'
       }`
     );
   } catch (err) {
