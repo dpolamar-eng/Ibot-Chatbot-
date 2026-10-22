@@ -37,16 +37,16 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   const [visibleLetters, setVisibleLetters] = useState<number>(4);
   const [animKey, setAnimKey] = useState<number>(0);
 
-  // Staggered reveal effect when animKey changes
+  // Staggered reveal effect synchronized with the bot profile wave animation (1800ms total)
   useEffect(() => {
     setIsExpanded(false);
     setVisibleLetters(0);
 
-    const tExpand = setTimeout(() => setIsExpanded(true), 350);
-    const tI = setTimeout(() => setVisibleLetters(1), 700);
-    const tB = setTimeout(() => setVisibleLetters(2), 850);
-    const tO = setTimeout(() => setVisibleLetters(3), 1000);
-    const tT = setTimeout(() => setVisibleLetters(4), 1150);
+    const tExpand = setTimeout(() => setIsExpanded(true), 150);
+    const tI = setTimeout(() => setVisibleLetters(1), 250);
+    const tB = setTimeout(() => setVisibleLetters(2), 650);
+    const tO = setTimeout(() => setVisibleLetters(3), 1050);
+    const tT = setTimeout(() => setVisibleLetters(4), 1450);
 
     return () => {
       clearTimeout(tExpand);
@@ -72,7 +72,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
       className={cn(
         'relative overflow-hidden select-none',
         'bg-gradient-to-r from-[#1e34c9] via-[#2552f4] to-[#3b59f8] text-white',
-        'pt-4 pb-5 px-5',
+        'pt-3.5 pb-6 px-5 sm:px-6',
         className
       )}
     >
@@ -105,13 +105,15 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 
             {/* IBOT Letters */}
             <div className="ml-2 flex items-center font-sans tracking-tight">
-              <span className="text-base font-black tracking-tight text-white select-none leading-none">
+              <span className="text-base font-black tracking-tight text-white select-none leading-none flex items-center">
                 {LETTERS.map((letter, idx) => (
                   <span
                     key={letter + idx}
                     className={cn(
-                      'inline-block transition-all duration-150',
-                      visibleLetters > idx ? 'opacity-100 scale-100' : 'opacity-0 scale-50'
+                      'inline-block transition-all duration-350 ease-out',
+                      visibleLetters > idx
+                        ? 'opacity-100 scale-100 translate-y-0'
+                        : 'opacity-0 scale-75 translate-y-1'
                     )}
                   >
                     {letter}

@@ -21,7 +21,7 @@ export const AssistantAvatar: React.FC<AssistantAvatarProps> = ({
       setIsWaving(true);
       const timer = setTimeout(() => {
         setIsWaving(false);
-      }, 1750);
+      }, 1800);
       return () => clearTimeout(timer);
     } else {
       setIsWaving(false);
@@ -33,7 +33,7 @@ export const AssistantAvatar: React.FC<AssistantAvatarProps> = ({
       setIsWaving(true);
       setTimeout(() => {
         setIsWaving(false);
-      }, 1750);
+      }, 1800);
     }
   };
 

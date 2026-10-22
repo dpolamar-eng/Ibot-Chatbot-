@@ -11,43 +11,36 @@ interface StageSelectorProps {
 
 const STAGES = [
   {
-    id: 'working_pro',
-    title: 'Working Professional',
-    description: 'Currently in the workforce; seeking career advancement, role elevation, or deeper impact.',
-    icon: Briefcase,
-    badge: 'Growth & Advancement',
+    id: 'early_years',
+    title: '1st or 2nd Year Student',
+    description: 'Exploring foundational tracks, learning core languages, and building starter projects.',
+    icon: BookOpen,
+    badge: 'Foundation',
   },
   {
-    id: 'career_switcher',
-    title: 'Career Changer / Transition',
-    description: 'Looking to pivot from your current role or industry into an exciting new discipline.',
-    icon: Rocket,
-    badge: 'Career Pivot',
-  },
-  {
-    id: 'student',
-    title: 'College / University Student',
-    description: 'Currently enrolled in an undergraduate or master’s program; building foundations.',
+    id: 'pre_final',
+    title: '3rd Year B.Tech / Pre-Final Year',
+    description: 'Preparing for upcoming campus placement drives and summer tech internships.',
     icon: GraduationCap,
-    badge: 'Foundation & Entry',
+    badge: 'High Focus',
+  },
+  {
+    id: 'final_year',
+    title: 'Final Year Student (4th Year)',
+    description: 'Actively preparing for full-time graduate roles, ATS resumes, and final interviews.',
+    icon: Rocket,
+    badge: 'Immediate',
   },
   {
     id: 'recent_grad',
-    title: 'Recent Graduate / Job Seeker',
-    description: 'Graduated or transitioning between roles; actively pursuing your next career destination.',
-    icon: BookOpen,
-    badge: 'Immediate Search',
+    title: 'Recent Graduate / Early Career',
+    description: 'Targeting a career transition or seeking entry-level engineering opportunities.',
+    icon: Briefcase,
+    badge: 'Career Transition',
   },
 ];
 
-const GRAD_YEARS = [
-  'Immediate (1–2 mos)',
-  'Next 3–6 months',
-  '6–12 months',
-  'Flexible / Exploring',
-  '2026 Grad',
-  '2027 Grad',
-];
+const GRAD_YEARS = ['2026', '2027', '2028', '2029', 'Already Graduated'];
 
 export const StageSelector: React.FC<StageSelectorProps> = ({
   selectedStage,
@@ -56,13 +49,13 @@ export const StageSelector: React.FC<StageSelectorProps> = ({
   onSelectYear,
 }) => {
   return (
-    <div className="space-y-5 animate-in fade-in duration-200">
+    <div className="space-y-3 animate-in fade-in duration-200">
       {/* 1. Stage selection */}
       <div>
-        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2.5">
+        <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
           Select your current stage
         </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {STAGES.map((s) => {
             const Icon = s.icon;
             const isSelected = selectedStage === s.id;
@@ -73,32 +66,32 @@ export const StageSelector: React.FC<StageSelectorProps> = ({
                 type="button"
                 onClick={() => onSelectStage(s.id, s.title)}
                 className={cn(
-                  'relative p-4 rounded-xl border text-left transition-all duration-180 flex flex-col justify-between cursor-pointer',
+                  'relative px-3 py-2 sm:py-2.5 rounded-xl border text-left transition-all duration-150 flex items-center gap-2.5 cursor-pointer',
                   isSelected
-                    ? 'bg-blue-50/70 border-[#2552f4] ring-2 ring-[#2552f4]/15 shadow-xs'
-                    : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50'
+                    ? 'bg-blue-50/80 border-[#2552f4] ring-1 ring-[#2552f4]/20 shadow-2xs'
+                    : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/60'
                 )}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-lg flex items-center justify-center',
-                        isSelected ? 'bg-[#2552f4] text-white' : 'bg-slate-100 text-slate-600'
-                      )}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
+                <div
+                  className={cn(
+                    'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
+                    isSelected ? 'bg-[#2552f4] text-white' : 'bg-slate-100 text-slate-600'
+                  )}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-1">
+                    <h4 className="text-[12.5px] font-semibold text-slate-900 leading-snug">
+                      {s.title}
+                    </h4>
                     {isSelected && (
-                      <span className="w-5 h-5 rounded-full bg-[#2552f4] text-white flex items-center justify-center">
-                        <Check className="w-3 h-3 stroke-[2.5]" />
+                      <span className="w-4 h-4 rounded-full bg-[#2552f4] text-white flex items-center justify-center shrink-0">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
                       </span>
                     )}
                   </div>
-                  <h4 className="text-[14px] font-semibold text-slate-900 leading-snug">
-                    {s.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 mt-1 leading-normal">
+                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">
                     {s.description}
                   </p>
                 </div>
@@ -110,10 +103,10 @@ export const StageSelector: React.FC<StageSelectorProps> = ({
 
       {/* 2. Target Horizon / Timeline */}
       <div>
-        <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-          Target Horizon / Goal Timeline
+        <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
+          Target Graduation / Placement Year
         </label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5">
           {GRAD_YEARS.map((yr) => {
             const isSelected = selectedYear === yr;
             return (
@@ -122,7 +115,7 @@ export const StageSelector: React.FC<StageSelectorProps> = ({
                 type="button"
                 onClick={() => onSelectYear(yr)}
                 className={cn(
-                  'px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all cursor-pointer',
+                  'px-3 py-1 rounded-full text-[11px] font-medium border transition-all cursor-pointer',
                   isSelected
                     ? 'bg-[#2552f4] text-white border-[#2552f4] shadow-xs'
                     : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'

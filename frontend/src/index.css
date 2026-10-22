@@ -131,8 +131,11 @@
     --font-mono:    "JetBrains Mono", monospace;
   }
 
-  html {
-    scroll-behavior: smooth;
+  html, body, #root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   body {
@@ -144,7 +147,6 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -331,7 +333,7 @@
 }
 
 .animate-ibot-emerge-settle {
-  animation: ibotMascotEmergeAndSettle 1.75s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: ibotMascotEmergeAndSettle 1.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: transform;
 }
 

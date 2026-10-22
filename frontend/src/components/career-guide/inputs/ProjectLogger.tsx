@@ -50,13 +50,12 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
+    <div className="space-y-2.5 animate-in fade-in duration-200">
       {/* Context info banner */}
-      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-        <FolderGit2 className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
-        <p leading-normal>
-          Practical accomplishments, professional achievements, or portfolio projects demonstrate real-world capability.
-          If you are focusing on fundamentals or just getting started, you can skip this section!
+      <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+        <FolderGit2 className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
+        <p className="leading-snug">
+          Projects or capstones demonstrate practical readiness. If you don&apos;t have projects yet, feel free to skip!
         </p>
       </div>
 

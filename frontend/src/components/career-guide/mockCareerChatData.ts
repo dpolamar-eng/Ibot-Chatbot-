@@ -41,7 +41,7 @@ export function getGuidedInitialMessage(): ChatMessage {
   return {
     id: 'guided-step-1',
     sender: 'assistant',
-    text: "Welcome to Career Ladder! 👋\nI'm your AI career intelligence assistant.\n\nMy mission is to help you navigate from **Point A (where you are now)** to **Point B (where you want to go)**. Whether you already have a target destination in mind or are exploring new directions across any field, I'll help you map out your trajectory.\n\nTo begin, what best describes your current career stage?",
+    text: "Welcome to Career Ladder! 👋\nI'll help you navigate from **Point A (where you are now)** to **Point B (where you want to go)**. To begin, select your current stage:",
     timestamp: getCurrentTimeString(),
     inputType: 'stage_select',
     stepIndex: 1,

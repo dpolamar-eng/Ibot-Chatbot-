@@ -108,22 +108,51 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     }
   }, [effectiveMode, onClose]);
 
-  // Intro waving animation
+  // Intro waving animation (synchronized to 1800ms with header word reveal)
   useEffect(() => {
     if (!hasPlayedIntro) {
       const timer = setTimeout(() => {
         setHasPlayedIntro(true);
-      }, 1850);
+      }, 1800);
       return () => clearTimeout(timer);
     }
   }, [hasPlayedIntro]);
 
+  const isInitialMount = useRef<boolean>(true);
+
+  // Ensure on initial mount/reload that the window and container always start at the very top
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+  }, []);
+
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior, block: 'end' });
+    requestAnimationFrame(() => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          top: scrollContainerRef.current.scrollHeight,
+          behavior,
+        });
+      }
+    });
   };
 
   useEffect(() => {
-    scrollToBottom('smooth');
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+      window.scrollTo(0, 0);
+      return;
+    }
+
+    // Only auto-scroll to bottom for subsequent messages, typing state, or quick replies
+    if (messages.length > 1 || isTyping || (quickReplies && quickReplies.length > 0)) {
+      scrollToBottom('smooth');
+    }
   }, [messages, isTyping, quickReplies]);
 
   // Confirm student profile (Phase 2 review card action)
@@ -158,7 +187,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
 
   // Restart / Reset active session
   const handleRefresh = () => {
-    setHasPlayedIntro(true);
+    setHasPlayedIntro(false);
     setIsScrolled(false);
     setIsTyping(false);
     setQuickReplies([]);
@@ -178,6 +207,11 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     } else {
       setMessages(getInitialMessages());
     }
+
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
+    window.scrollTo(0, 0);
 
     onRefresh?.();
   };
@@ -542,7 +576,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       />
 
       {/* 2. White Conversation Body with overlapping rounded top */}
-      <div className="relative flex-1 flex flex-col bg-white -mt-4 rounded-t-[26px] overflow-hidden z-10 pt-3">
+      <div className="relative flex-1 flex flex-col bg-white -mt-2.5 rounded-t-[22px] overflow-hidden z-10 pt-2.5">
         {/* Top smooth fading gradient overlay */}
         <div
           className={cn(

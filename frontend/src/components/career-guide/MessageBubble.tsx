@@ -61,9 +61,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
 
   // Local state for interactive step input before confirming
-  const [stageId, setStageId] = useState('pre_final');
-  const [stageLabel, setStageLabel] = useState('3rd Year B.Tech / Pre-Final Year');
-  const [gradYear, setGradYear] = useState('2026');
+  const [stageId, setStageId] = useState('early_years');
+  const [stageLabel, setStageLabel] = useState('1st or 2nd Year Student');
+  const [gradYear, setGradYear] = useState('2028');
 
   const [education, setEducation] = useState({
     degree: 'B.Tech',
@@ -157,7 +157,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         className={cn(
           'flex flex-col',
-          isAssistant ? 'items-start w-full max-w-[94%] sm:max-w-[88%]' : 'items-end max-w-[82%]'
+          isAssistant ? 'items-start w-full max-w-[96%] sm:max-w-[94%]' : 'items-end max-w-[82%]'
         )}
       >
         <div
@@ -171,8 +171,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           {/* Step header pill if part of guided walkthrough */}
           {isAssistant && message.stepTitle && (
             <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 text-[11px] font-semibold text-[#2552f4]">
-              <span className="flex items-center gap-1.5 uppercase tracking-wider">
-                <Sparkles className="w-3 h-3 text-[#2552f4]" />
+              <span className="uppercase tracking-wider">
                 {message.stepTitle}
               </span>
               {message.isCompletedStep && (
@@ -249,7 +248,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               INTERACTIVE ANSWER OPTIONS (Rendered inline inside the conversation stream)
              ========================================================================= */}
           {isAssistant && message.inputType && !message.isCompletedStep && (
-            <div className="mt-4 pt-3 border-t border-slate-100 space-y-4 animate-in fade-in duration-200">
+            <div className="mt-2.5 pt-2 border-t border-slate-100 space-y-2.5 animate-in fade-in duration-200">
               {/* Step 1: Stage & Graduation Year */}
               {message.inputType === 'stage_select' && (
                 <StageSelector
@@ -305,7 +304,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
 
               {/* Step Action Buttons (Previous, Skip, Continue) */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-1">
                 <div>
                   {canGoBack && onPreviousStep && (
                     <button
@@ -333,7 +332,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   <button
                     type="button"
                     onClick={handleConfirmStep}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2552f4] hover:bg-[#1e3bb3] active:bg-[#1a349e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#2552f4] hover:bg-[#1e3bb3] active:bg-[#1a349e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <span>
                       {message.stepIndex === 6 ? 'Finish Discovery' : 'Continue'}

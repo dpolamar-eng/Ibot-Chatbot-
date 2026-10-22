@@ -86,13 +86,12 @@ export const SkillSelector: React.FC<SkillSelectorProps> = ({
   };
 
   return (
-    <div className="space-y-4 animate-in fade-in duration-200">
+    <div className="space-y-2.5 animate-in fade-in duration-200">
       {/* Context note regarding self-reported data */}
-      <div className="flex items-start gap-2.5 p-3 rounded-xl bg-blue-50/60 border border-blue-100 text-xs text-slate-600">
-        <Sparkles className="w-4 h-4 text-[#2552f4] shrink-0 mt-0.5" />
-        <p leading-normal>
-          Select skills, tools, domain competencies, or specialized capabilities you work with or know best.
-          Click any selected skill badge to adjust your comfort level.
+      <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50/60 border border-blue-100 text-xs text-slate-600">
+        <Sparkles className="w-3.5 h-3.5 text-[#2552f4] shrink-0 mt-0.5" />
+        <p className="leading-snug">
+          Select technologies you are familiar with or have used in coursework or projects.
         </p>
       </div>
 
