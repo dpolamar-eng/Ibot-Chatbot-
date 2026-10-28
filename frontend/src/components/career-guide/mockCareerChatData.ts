@@ -1,4 +1,7 @@
 export type MessageInputType =
+  | 'email_prompt'
+  | 'intent_select'
+  | 'transition_navigator'
   | 'stage_select'
   | 'education_select'
   | 'skills_select'
@@ -19,10 +22,13 @@ export interface ChatMessage {
   };
   followupQuestions?: string[];
   inputType?: MessageInputType;
-  stepIndex?: number; // 1 to 6
+  stepIndex?: number; // 0 to 6
   stepTitle?: string;
   isCompletedStep?: boolean;
   stepData?: any;
+  isEdited?: boolean;
+  selectedOption?: string;
+  answeredMessageId?: string;
 }
 
 export interface QuickReplyOption {
@@ -36,16 +42,16 @@ export function getCurrentTimeString(): string {
   return now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-// Guided Discovery Initial Message (Step 1)
+// Guided Discovery Initial Message (Step 0: Welcome & Optional Email for Detailed Profile)
 export function getGuidedInitialMessage(): ChatMessage {
   return {
-    id: 'guided-step-1',
+    id: 'guided-step-welcome-email',
     sender: 'assistant',
-    text: "Welcome to Career Ladder! 👋\nI'll help you navigate from **Point A (where you are now)** to **Point B (where you want to go)**. To begin, select your current stage:",
+    text: "Welcome to **Career Ladder**! 👋\n\nTo get your detailed **Career Ladder** profile, please enter a valid email below (or you can skip for now):",
     timestamp: getCurrentTimeString(),
-    inputType: 'stage_select',
-    stepIndex: 1,
-    stepTitle: 'Current Position (Point A)',
+    inputType: 'email_prompt',
+    stepIndex: 0,
+    stepTitle: 'Welcome & Updates',
     isCompletedStep: false,
   };
 }
@@ -56,14 +62,12 @@ export function getInitialMessages(): ChatMessage[] {
     {
       id: 'msg-qa-1',
       sender: 'assistant',
-      text: "Hi there! 👋\nWelcome to **Career Q&A & Goal Pathway Builder**.\n\nI'm your career strategist. In this mode, I focus on:\n• **Clarifying your career doubts** (roles, skill transitions, salary trends, interview preparation)\n• **Creating a concrete, step-by-step pathway toward your goal role** (your final destination)\n\nWhat career doubt or goal role would you like to explore today?",
+      text: "Hi there! 👋\nWelcome to **Career Transition & Goal Pathway Navigator**.\n\nI'm your senior transition strategist. In this mode, I help working professionals:\n• **Map career pivots from your current role to your target destination**\n• **Analyze transferable skills, capability gaps, and high-impact bridge projects**\n• **Clarify career doubts, salary benchmarks, and transition interview prep**\n\nTo save your transition roadmap, please enter a valid email below (or you can skip for now):",
       timestamp: getCurrentTimeString(),
-      followupQuestions: [
-        'Create my goal role pathway',
-        'How do I transition to Full Stack Developer?',
-        'Compare AI Engineer vs Data Engineer',
-        'What projects make my resume stand out?',
-      ],
+      inputType: 'email_prompt',
+      stepIndex: 0,
+      stepTitle: 'Welcome & Updates',
+      isCompletedStep: false,
     },
   ];
 }
@@ -71,39 +75,69 @@ export function getInitialMessages(): ChatMessage[] {
 export const INITIAL_MESSAGES: ChatMessage[] = getInitialMessages();
 
 export const REFERENCE_QUICK_REPLIES: QuickReplyOption[] = [
-  { id: 'pathway', label: 'Create my goal role pathway', highlighted: true },
-  { id: 'doubts', label: 'Clarify career transition doubts' },
-  { id: 'compare', label: 'Compare two career paths' },
-  { id: 'interviews', label: 'Interview & project prep' },
+  { id: 'transition', label: '🚀 Plan my career transition pathway', highlighted: true },
+  { id: 'transferable', label: 'What skills transfer from my current job?' },
+  { id: 'resume', label: 'How to position my resume for a career switch' },
+  { id: 'interviews', label: 'Interview traps for career switchers' },
 ];
 
 export const TOTAL_GUIDED_STEPS = 6;
 
-export function getGuidedStepMessage(stepNumber: number, profileState: any): ChatMessage {
+export function getGuidedStepMessage(
+  stepNumber: number,
+  profileState: any,
+  careerIntent?: 'career_decided' | 'career_exploring' | 'uncertain'
+): ChatMessage {
   const time = getCurrentTimeString();
+  const intent = careerIntent || profileState?.careerIntent || 'career_decided';
 
   switch (stepNumber) {
-    case 2:
+    case 1:
       return {
-        id: `guided-step-2-${Date.now()}`,
+        id: `guided-step-1-${Date.now()}`,
         sender: 'assistant',
-        text: 'Great! Next, tell me about your educational or training background. What is your field of study or highest qualification? (If you are an experienced professional or self-taught, you can share certifications or key background areas).',
+        text: "Before we map your profile, choose how you would like to proceed with your career planning:",
         timestamp: time,
-        inputType: 'education_select',
-        stepIndex: 2,
-        stepTitle: 'Education & Qualifications',
+        inputType: 'intent_select',
+        stepIndex: 1,
+        stepTitle: 'Journey Track',
         isCompletedStep: false,
       };
+
+    case 2:
+      if (intent === 'career_decided') {
+        return {
+          id: `guided-step-2-goals-${Date.now()}`,
+          sender: 'assistant',
+          text: "Awesome! Since you already have a target role or destination in mind, let's establish that first.\n\nWhat is your goal role (or top roles you are aiming for), and what is your primary development priority right now?",
+          timestamp: time,
+          inputType: 'goals_select',
+          stepIndex: 2,
+          stepTitle: 'Target Destination & Goals (Point B)',
+          isCompletedStep: false,
+        };
+      } else {
+        return {
+          id: `guided-step-2-interests-${Date.now()}`,
+          sender: 'assistant',
+          text: "Fantastic! Since you are exploring careers based on what excites you, let's start with your interests.\n\nWhat problem domains, industries, or working environments bring out your best performance and curiosity?",
+          timestamp: time,
+          inputType: 'interests_select',
+          stepIndex: 2,
+          stepTitle: 'Interests & Work Preferences',
+          isCompletedStep: false,
+        };
+      }
 
     case 3:
       return {
         id: `guided-step-3-${Date.now()}`,
         sender: 'assistant',
-        text: 'Now, let’s identify your core capabilities and strengths. What skills, tools, domain competencies, or specialized methodologies do you work with or know best? You can also specify your comfort level.',
+        text: "Now let's map your baseline: where are you currently in your journey? Select your current career stage and target timeline:",
         timestamp: time,
-        inputType: 'skills_select',
+        inputType: 'stage_select',
         stepIndex: 3,
-        stepTitle: 'Skills & Capabilities',
+        stepTitle: 'Current Position (Point A)',
         isCompletedStep: false,
       };
 
@@ -111,11 +145,11 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-4-${Date.now()}`,
         sender: 'assistant',
-        text: 'Practical exposure and accomplishments prove real-world execution. What key projects, work achievements, or practical experiences stand out in your journey so far?\n\n(If you are just getting started or focusing on fundamentals, feel free to skip this step!)',
+        text: "Great! Next, tell me about your educational or training background. What is your field of study or highest qualification? (Certifications, self-taught focus areas, or bootcamps are welcome too).",
         timestamp: time,
-        inputType: 'projects_entry',
+        inputType: 'education_select',
         stepIndex: 4,
-        stepTitle: 'Practical Experience & Accomplishments',
+        stepTitle: 'Education & Qualifications',
         isCompletedStep: false,
       };
 
@@ -123,11 +157,11 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-5-${Date.now()}`,
         sender: 'assistant',
-        text: 'Let’s look at your interests and work style preferences. What problem domains, industries, or working environments bring out your best performance and motivation?',
+        text: "Now let's identify your core capabilities and strengths. What skills, tools, domain competencies, or specialized methodologies do you work with or know best? You can also specify your comfort level.",
         timestamp: time,
-        inputType: 'interests_select',
+        inputType: 'skills_select',
         stepIndex: 5,
-        stepTitle: 'Interests & Work Preferences',
+        stepTitle: 'Skills & Capabilities',
         isCompletedStep: false,
       };
 
@@ -135,32 +169,51 @@ export function getGuidedStepMessage(stepNumber: number, profileState: any): Cha
       return {
         id: `guided-step-6-${Date.now()}`,
         sender: 'assistant',
-        text: 'Almost done! Now let’s define Point B: What is your target career destination, or what specific directions are you exploring? What is your primary development priority right now?',
+        text: "Practical exposure and accomplishments prove real-world execution. What key projects, work achievements, or practical experiences stand out in your journey so far?\n\n(If you are just getting started or focusing on fundamentals, feel free to skip this step!)",
         timestamp: time,
-        inputType: 'goals_select',
+        inputType: 'projects_entry',
         stepIndex: 6,
-        stepTitle: 'Career Destination & Goals (Point B)',
+        stepTitle: 'Practical Experience & Accomplishments',
         isCompletedStep: false,
       };
 
     case 7:
     default:
-      return {
-        id: `guided-step-summary-${Date.now()}`,
-        sender: 'assistant',
-        text: 'Congratulations! 🎉 Your career profile mapping is complete. Below is your synthesized Point A to Point B overview and initial development insights:',
-        timestamp: time,
-        inputType: 'summary_card',
-        stepIndex: 7,
-        stepTitle: 'Career Synthesis & Review',
-        isCompletedStep: true,
-        followupQuestions: [
-          'What are my primary capability gaps?',
-          'What transferable skills can I leverage?',
-          'How to structure my transition timeline?',
-          'Explore alternative career options',
-        ],
-      };
+      if (intent === 'career_decided') {
+        return {
+          id: `guided-step-summary-${Date.now()}`,
+          sender: 'assistant',
+          text: "Congratulations! 🎉 Your career profile mapping is complete. Below is your synthesized Point A to Point B overview, capability gap analysis, and tailored roadmap toward your target role:",
+          timestamp: time,
+          inputType: 'summary_card',
+          stepIndex: 7,
+          stepTitle: 'Career Synthesis & Review',
+          isCompletedStep: true,
+          followupQuestions: [
+            'What are my primary capability gaps?',
+            'Build my step-by-step learning roadmap',
+            'High-impact projects for this role',
+            'Interview & preparation tips',
+          ],
+        };
+      } else {
+        return {
+          id: `guided-step-summary-${Date.now()}`,
+          sender: 'assistant',
+          text: "Congratulations! 🎉 Your career profile mapping is complete. Below is your synthesized profile, curated role discovery matches based on your interests, and recommended next steps:",
+          timestamp: time,
+          inputType: 'summary_card',
+          stepIndex: 7,
+          stepTitle: 'Career Synthesis & Review',
+          isCompletedStep: true,
+          followupQuestions: [
+            'Compare top recommended career paths',
+            'What transferable skills can I leverage?',
+            'How to structure my learning timeline?',
+            'Explore high-demand emerging roles',
+          ],
+        };
+      }
   }
 }
 
@@ -179,6 +232,21 @@ export function getMockAssistantReply(
         'Projects to add to strengthen this resume',
         'Common ATS resume mistakes to avoid',
         'Software Development Roadmap',
+      ],
+      nextReplies: REFERENCE_QUICK_REPLIES,
+    };
+  }
+
+  // Career Transition Flow response
+  if (normalized.includes('career transition') || normalized.includes('moving from') || normalized.includes('pivot')) {
+    return {
+      replyText:
+        `### 🚀 Career Transition Blueprint\n\nHere is your strategic transition blueprint designed for working professionals:\n\n#### 1. 🔄 Transferable Strengths Matrix\n* **Domain Intuition:** Your background provides real-world familiarity with development workflows, edge-case analysis, and systems quality that fresh graduates lack.\n* **Process & Tooling:** Exposure to Git, Jira, CI/CD, and cross-functional teams translates directly into your new role.\n\n#### 2. 🎯 High-Leverage Capability Gaps\n* **Core Engineering Depth:** Master hands-on API design, data structures, and production architecture.\n* **Modern Stacks:** Focus on Python/TypeScript, FastAPI/React, and Cloud deployment.\n*(Skip deep theoretical trivia—focus on practical execution)*.\n\n#### 3. 🛠️ The "Bridge Project" (Proof of Capability)\n* **Project Concept:** Build an intelligent domain tool (e.g. an automated test-generation agent or system monitor) that bridges your past domain with your target role.\n* **Why It Works:** It proves you understand the target role while turning your past experience into an unfair advantage.\n\n#### 4. 📅 Phased Part-Time Transition Roadmap (5–10 hrs/week)\n* **Month 1:** Core Fundamentals, syntax fluency & system architecture.\n* **Month 2:** Applied frameworks, databases, and microservices.\n* **Month 3:** Build, containerize, and deploy the Bridge Project with live demo & GitHub README.\n* **Month 4:** Resume repositioning, LinkedIn optimization & technical mock interviews.`,
+      followupQuestions: [
+        '📄 How to tailor my resume for this career transition',
+        '💼 Expected compensation & salary impact during transition',
+        '⚠️ Top interview traps for career switchers',
+        '🛠️ Step-by-step guidance for the Bridge Project',
       ],
       nextReplies: REFERENCE_QUICK_REPLIES,
     };

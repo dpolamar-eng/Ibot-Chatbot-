@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS public.career_profiles (
     career_stage VARCHAR(40),                      -- 'working_professional', 'student', 'career_changer', 'recent_grad'
     career_intent VARCHAR(30) DEFAULT 'uncertain' CHECK (career_intent IN ('career_decided', 'career_exploring', 'uncertain')),
     employment_status VARCHAR(40),                 -- 'employed', 'studying', 'seeking_work', 'freelancing'
+    email TEXT,                                    -- Dedicated user email for updates, notifications, and export
     primary_career_goal TEXT,                      -- Target role or exploration direction
     profile_data JSONB NOT NULL DEFAULT '{}'::jsonb, -- Flexible nested data (skills, education, projects, interests)
     profile_summary TEXT,                          -- Compact context for AI prompt injection
@@ -45,6 +46,11 @@ CREATE TABLE IF NOT EXISTS public.career_profiles (
     -- Must have at least one valid owner (guest or registered user)
     CONSTRAINT chk_career_profile_owner CHECK (user_id IS NOT NULL OR anonymous_visitor_id IS NOT NULL)
 );
+
+-- Index on email for rapid lookup and export
+CREATE INDEX IF NOT EXISTS idx_career_profiles_email 
+    ON public.career_profiles(email) 
+    WHERE email IS NOT NULL;
 
 -- Ensure one active profile per registered user and per anonymous visitor
 CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_user_profile 

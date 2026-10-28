@@ -91,7 +91,7 @@ export const SkillSelector: React.FC<SkillSelectorProps> = ({
       <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-blue-50/60 border border-blue-100 text-xs text-slate-600">
         <Sparkles className="w-3.5 h-3.5 text-[#2552f4] shrink-0 mt-0.5" />
         <p className="leading-snug">
-          Select technologies you are familiar with or have used in coursework or projects.
+          Select skills, tools, domain competencies, or specialized capabilities you work with or know best. Click any selected skill badge to adjust your comfort level.
         </p>
       </div>
 

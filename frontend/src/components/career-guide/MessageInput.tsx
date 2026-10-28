@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { cn } from '../../lib/utils';
-import { Paperclip, Send, X, FileText, Mic, MicOff, Sparkles } from 'lucide-react';
+import { Paperclip, Send, X, FileText, Mic, AlertCircle } from 'lucide-react';
 
 interface AttachedFileInfo {
   name: string;
@@ -24,8 +24,21 @@ export const MessageInput: React.FC<MessageInputProps> = ({
   const [attachedFile, setAttachedFile] = useState<AttachedFileInfo | null>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+
+  // Clean up SpeechRecognition instance when unmounting
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
 
   const handleFileClick = () => {
     if (disabled) return;
@@ -52,41 +65,92 @@ export const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleVoiceToggle = () => {
     if (disabled) return;
-    if (!isRecording) {
-      setIsRecording(true);
-      // Simulate real-time voice speech-to-text typing
-      const sampleQueries = [
-        'How do I transition from backend development to AI engineering?',
-        'Give me the best roadmap for moving into product management.',
-        'Review my capabilities and experience for high-growth roles.',
-        'I am exploring careers in data and finance; what paths fit my background?',
-      ];
-      const randomQuery = sampleQueries[Math.floor(Math.random() * sampleQueries.length)];
-      
-      let currentIdx = 0;
-      const interval = setInterval(() => {
-        if (currentIdx <= randomQuery.length) {
-          setInputText(randomQuery.slice(0, currentIdx));
-          currentIdx += 3;
-        } else {
-          clearInterval(interval);
-          setIsRecording(false);
-        }
-      }, 50);
-    } else {
+    setSpeechError(null);
+
+    // Google Web Speech API (supported natively in Chrome, Edge, and Chromium browsers)
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSpeechError(
+        'Google Speech Recognition is supported in Chrome, Edge, and Chromium browsers. Please use Chrome for voice typing.'
+      );
+      setTimeout(() => setSpeechError(null), 5000);
+      return;
+    }
+
+    if (isRecording) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
       setIsRecording(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.lang = 'en-US';
+
+      recognition.onstart = () => {
+        setIsRecording(true);
+      };
+
+      recognition.onresult = (event: any) => {
+        let fullTranscript = '';
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript;
+        }
+        if (fullTranscript) {
+          setInputText(fullTranscript);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        console.warn('Speech recognition error:', event.error);
+        if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+          setSpeechError(
+            'Microphone access was blocked. Please click the camera/mic icon in your browser address bar to allow microphone access.'
+          );
+        } else if (event.error === 'no-speech') {
+          setSpeechError('No voice detected. Please speak closer to your microphone.');
+        } else if (event.error === 'network') {
+          setSpeechError('Google Speech Recognition network issue. Please check your internet connection.');
+        }
+        setIsRecording(false);
+        setTimeout(() => setSpeechError(null), 5000);
+      };
+
+      recognition.onend = () => {
+        setIsRecording(false);
+        inputRef.current?.focus();
+      };
+
+      recognition.start();
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      setIsRecording(false);
+      setSpeechError('Could not access microphone. Please check permissions.');
+      setTimeout(() => setSpeechError(null), 5000);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isRecording) {
+      try {
+        recognitionRef.current?.stop();
+      } catch {}
+      setIsRecording(false);
+    }
     const trimmed = inputText.trim();
     if ((!trimmed && !attachedFile) || disabled) return;
 
     onSendMessage(trimmed, attachedFile || undefined);
     setInputText('');
     setAttachedFile(null);
-    setIsRecording(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -113,18 +177,36 @@ export const MessageInput: React.FC<MessageInputProps> = ({
         aria-hidden="true"
       />
 
+      {/* Speech Recognition Error Notification */}
+      {speechError && (
+        <div className="mb-2 flex items-center justify-between gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-800 animate-fade-in shadow-xs">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <span className="font-medium">{speechError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setSpeechError(null)}
+            className="p-0.5 rounded hover:bg-amber-500/20 text-amber-700 transition-colors cursor-pointer"
+            title="Dismiss"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Attached File Preview Badge */}
       {attachedFile && (
-        <div className="mb-2 flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50/50 border border-blue-200/80 text-xs text-[#2552f4] animate-fade-in shadow-xs">
+        <div className="mb-2 flex items-center justify-between gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#032836] to-[#0c1a4e] border border-cyan-500/30 text-xs text-white animate-fade-in shadow-xs">
           <div className="flex items-center gap-2 truncate">
-            <FileText className="w-4 h-4 shrink-0 text-[#315cfc]" />
-            <span className="font-semibold truncate text-slate-800">{attachedFile.name}</span>
-            <span className="text-slate-500 shrink-0 text-[11px]">({attachedFile.size})</span>
+            <FileText className="w-4 h-4 shrink-0 text-cyan-300" />
+            <span className="font-semibold truncate text-white">{attachedFile.name}</span>
+            <span className="text-slate-300 shrink-0 text-[11px]">({attachedFile.size})</span>
           </div>
           <button
             type="button"
             onClick={handleRemoveFile}
-            className="p-1 rounded-full hover:bg-blue-100/80 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+            className="p-1 rounded-full hover:bg-white/20 text-slate-300 hover:text-white transition-colors cursor-pointer"
             title="Remove attached file"
           >
             <X className="w-3.5 h-3.5" />
@@ -136,11 +218,13 @@ export const MessageInput: React.FC<MessageInputProps> = ({
       <div
         className={cn(
           'relative flex items-center w-full pl-3 pr-1.5 py-1.5 rounded-full',
-          'bg-gradient-to-r from-slate-50 via-white to-slate-50',
-          'border transition-all duration-300 shadow-[0_2px_10px_rgba(0,0,0,0.03)]',
+          'bg-gradient-to-r from-[#032836] via-[#0c1a4e] to-[#380a54]',
+          'border transition-all duration-300 shadow-[0_4px_16px_rgba(12,26,78,0.18)]',
           isFocused
-            ? 'border-[#315cfc] ring-3 ring-[#315cfc]/15 shadow-[0_4px_20px_rgba(49,92,252,0.12)]'
-            : 'border-slate-200 hover:border-slate-300'
+            ? 'border-cyan-400 ring-2 ring-cyan-400/25 shadow-[0_4px_20px_rgba(34,211,238,0.25)]'
+            : isRecording
+            ? 'border-rose-400 ring-2 ring-rose-400/30 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
+            : 'border-white/15 hover:border-white/25'
         )}
       >
         {/* Attachment Paperclip Button */}
@@ -148,7 +232,7 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           type="button"
           onClick={handleFileClick}
           disabled={disabled}
-          className="text-slate-400 hover:text-[#315cfc] p-2 rounded-full transition-colors focus:outline-none cursor-pointer hover:bg-blue-50/70 active:scale-95 shrink-0"
+          className="text-cyan-300/80 hover:text-white p-2 rounded-full transition-colors focus:outline-none cursor-pointer hover:bg-white/10 active:scale-95 shrink-0"
           title="Attach resume or document (.pdf, .docx)"
           aria-label="Attach file"
         >
@@ -164,13 +248,19 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           onKeyDown={handleKeyDown}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder={attachedFile ? 'Add a message or press Send...' : placeholder}
+          placeholder={
+            isRecording
+              ? 'Listening... speak into your microphone'
+              : attachedFile
+              ? 'Add a message or press Send...'
+              : placeholder
+          }
           disabled={disabled}
-          className="flex-1 bg-transparent px-2.5 py-2 text-[14.5px] sm:text-[15px] text-slate-800 placeholder-slate-400 outline-none font-normal"
+          className="flex-1 bg-transparent px-2.5 py-2 text-[14.5px] sm:text-[15px] text-white placeholder-slate-400 outline-none font-normal"
           aria-label="Ask about your career"
         />
 
-        {/* Voice dictation simulation button */}
+        {/* Voice dictation button with Google Speech Recognition */}
         <button
           type="button"
           onClick={handleVoiceToggle}
@@ -178,45 +268,50 @@ export const MessageInput: React.FC<MessageInputProps> = ({
           className={cn(
             'p-2 rounded-full transition-all focus:outline-none cursor-pointer shrink-0 mr-1',
             isRecording
-              ? 'text-rose-600 bg-rose-50 animate-pulse'
-              : 'text-slate-400 hover:text-[#315cfc] hover:bg-blue-50/70'
+              ? 'text-rose-400 bg-rose-500/20 ring-2 ring-rose-400/50 animate-pulse'
+              : 'text-cyan-300/80 hover:text-white hover:bg-white/10'
           )}
-          title={isRecording ? 'Listening...' : 'Voice query (simulated)'}
+          title={
+            isRecording
+              ? 'Listening to your voice... (Click to stop)'
+              : 'Voice typing (Google Speech Recognition)'
+          }
           aria-label="Voice input"
         >
           {isRecording ? (
-            <Mic className="w-4 h-4 text-rose-500 animate-bounce" />
+            <Mic className="w-4 h-4 text-rose-400 animate-bounce" />
           ) : (
             <Mic className="w-4 h-4 stroke-[2]" />
           )}
         </button>
 
-        {/* Send Button */}
+        {/* Send Button - Brightly Illuminated Neon Gradient */}
         <button
           type="submit"
-          disabled={!canSend}
+          disabled={disabled}
+          onClick={(e) => {
+            if (!canSend) {
+              e.preventDefault();
+              inputRef.current?.focus();
+            }
+          }}
           className={cn(
-            'w-10 h-10 shrink-0 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer',
+            'w-9 h-9 shrink-0 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer',
+            'bg-gradient-to-r from-[#00d2ff] via-[#2563eb] to-[#c026d3] text-white',
             canSend
-              ? 'bg-gradient-to-tr from-[#2552f4] to-[#3b68fc] text-white shadow-[0_4px_14px_rgba(37,82,244,0.35)] hover:scale-105 active:scale-95'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed opacity-80'
+              ? 'shadow-[0_0_16px_rgba(0,210,255,0.6)] hover:scale-110 active:scale-95'
+              : 'shadow-[0_0_12px_rgba(0,210,255,0.4)] opacity-90 hover:opacity-100 hover:scale-105'
           )}
-          title="Send message (Enter)"
+          title={canSend ? 'Send message (Enter)' : 'Type a message to send'}
           aria-label="Send message"
         >
-          <Send className={cn('w-4 h-4 ml-0.5', canSend ? 'text-white' : 'text-slate-400')} />
+          <Send className="w-4 h-4 ml-0.5 text-white stroke-[2.4]" />
         </button>
       </div>
 
-      {/* Minimal helper line with shortcuts */}
-      <div className="flex items-center justify-between px-3 mt-1.5 text-[11px] text-slate-400">
-        <span className="flex items-center gap-1">
-          <Sparkles className="w-3 h-3 text-amber-500" />
-          Instant AI Career Mentorship
-        </span>
-        <span className="hidden sm:inline opacity-75">
-          Press <kbd className="px-1 py-0.2 bg-slate-100 rounded text-[10px] text-slate-600 border border-slate-200 font-mono">Enter ↵</kbd> to send
-        </span>
+      {/* Minimal helper line */}
+      <div className="flex items-center px-3 mt-1.5 text-[11px] text-slate-400">
+        <span>Instant AI Career Mentorship</span>
       </div>
     </form>
   );

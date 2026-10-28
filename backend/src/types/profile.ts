@@ -10,6 +10,8 @@
  * - Non-blocking, flexible completion requirements across experience levels
  */
 
+import type { CapabilityAssessmentRecord, ValidationState } from './validation.js';
+
 export type CareerIntent = 'career_decided' | 'career_exploring' | 'uncertain';
 
 export type CareerStage =
@@ -105,8 +107,10 @@ export interface StudentCareerProfile {
     currentRole?: string; // Point A current role / job title
     yearsOfExperience?: string;
     industry?: string;
+    email?: string;
     skipped?: boolean;
   };
+  email?: string;
   education: EducationInfo;
   skills: SkillItem[];
   skillsExplicitlyAbsent?: boolean;
@@ -117,6 +121,7 @@ export interface StudentCareerProfile {
   aiSuggestions: AiSuggestions;
   pointASummary?: string; // Point A: current position synthesis
   pointBSummary?: string; // Point B: destination / target trajectory
+  capabilityAssessment?: CapabilityAssessmentRecord;
   status: 'in_progress' | 'ready_for_review' | 'confirmed';
 }
 
@@ -176,7 +181,8 @@ export interface ProfileSession {
   missingFields: ProfileSectionKey[];
   sectionAnalyses: Record<ProfileSectionKey, SectionAnalysis>;
   completionPercentage: number;
-  activeQuestionCategory: ProfileSectionKey | 'general_qa' | 'review';
+  activeQuestionCategory: ProfileSectionKey | 'general_qa' | 'review' | 'capability_validation';
+  validationState?: ValidationState;
   history: Array<{ role: 'user' | 'model'; text: string }>;
   changeHistory: Array<{ field: string; oldValue: any; newValue: any; timestamp: string }>;
   createdAt: number;
@@ -435,11 +441,13 @@ export function evaluateProfileCompleteness(
     const hasEnv = Boolean(profile.interests.workEnvironment && profile.interests.workEnvironment.trim());
     const hasMotivations = Boolean(profile.interests.motivations && profile.interests.motivations.length > 0);
     const isSkipped = Boolean(profile.interests.skipped);
+    const isDecided = profile.careerIntent === 'career_decided';
+    const hasDecidedGoal = Boolean(profile.goals.targetRoles && profile.goals.targetRoles.length > 0) || Boolean(profile.goals.destinationSummary);
 
     let state: SectionState = 'unaddressed';
     const missing: string[] = [];
 
-    if (hasTracks || hasDomains || hasEnv || hasMotivations) {
+    if (hasTracks || hasDomains || hasEnv || hasMotivations || (isDecided && hasDecidedGoal)) {
       state = 'complete';
     } else if (isSkipped) {
       state = 'skipped';
@@ -458,9 +466,11 @@ export function evaluateProfileCompleteness(
           ? profile.interests.preferredDomains.join(', ')
           : hasEnv
             ? profile.interests.workEnvironment
-            : isSkipped
-              ? 'Skipped for now'
-              : 'None provided',
+            : isDecided && profile.goals.targetRoles?.length
+              ? `Aligned with target goal: ${profile.goals.targetRoles.join(', ')}`
+              : isSkipped
+                ? 'Skipped for now'
+                : 'None provided',
       missingDetails: missing,
     };
   }

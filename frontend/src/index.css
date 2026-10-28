@@ -157,6 +157,22 @@
     color: var(--ibot-text-on-dark);
   }
 
+  /* Chatbot UI headings and response elements default strictly to sans-serif */
+  [role="region"][aria-label="IBOT Career Guide Chatbot"] h1,
+  [role="region"][aria-label="IBOT Career Guide Chatbot"] h2,
+  [role="region"][aria-label="IBOT Career Guide Chatbot"] h3,
+  [role="region"][aria-label="IBOT Career Guide Chatbot"] h4,
+  [role="region"][aria-label="IBOT Career Guide Chatbot"] h5,
+  [role="region"][aria-label="IBOT Career Guide Chatbot"] h6,
+  .career-guide-chat h1,
+  .career-guide-chat h2,
+  .career-guide-chat h3,
+  .career-guide-chat h4,
+  .career-guide-chat h5,
+  .career-guide-chat h6 {
+    font-family: var(--font-sans);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
     * {

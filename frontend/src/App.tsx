@@ -18,19 +18,19 @@ export default function App() {
   }, []);
 
   return (
-    <div className="h-screen h-[100dvh] w-full bg-[#0a0f1d] text-slate-800 font-sans selection:bg-[#2552f4] selection:text-white flex flex-col items-center justify-center p-0 sm:p-3 md:p-4 relative overflow-hidden">
+    <div className="h-screen h-[100dvh] w-full bg-[#090d1a] text-slate-800 font-sans selection:bg-[#2552f4] selection:text-white flex flex-col items-center justify-center p-0 sm:p-3 md:p-5 relative overflow-hidden">
       {/* Subtle ambient background glow */}
       <div
-        className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-blue-600/15 blur-3xl pointer-events-none"
+        className="absolute -top-32 -left-32 w-96 h-96 rounded-full bg-cyan-600/15 blur-3xl pointer-events-none"
         aria-hidden="true"
       />
       <div
-        className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-indigo-600/15 blur-3xl pointer-events-none"
+        className="absolute -bottom-32 -right-32 w-96 h-96 rounded-full bg-fuchsia-600/15 blur-3xl pointer-events-none"
         aria-hidden="true"
       />
 
       {/* Centered Chatbot Container */}
-      <div className="relative z-10 w-full max-w-5xl h-full sm:h-[min(94vh,calc(100vh-2rem))] max-h-[960px] flex flex-col rounded-none sm:rounded-2xl md:rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5),0_0_40px_rgba(37,82,244,0.12)] overflow-hidden border-0 sm:border border-slate-700/60 bg-white ring-1 ring-white/10">
+      <div className="relative z-10 w-full max-w-5xl h-full sm:h-[min(94vh,calc(100vh-2rem))] max-h-[960px] flex flex-col rounded-none sm:rounded-[24px] md:rounded-[28px] shadow-[0_25px_70px_-15px_rgba(0,0,0,0.6),0_0_50px_rgba(37,82,244,0.15)] overflow-hidden border-0 sm:border border-slate-700/50 bg-white ring-1 ring-white/10">
         <IBOTCareerGuide
           key={resetKey}
           mode="panel"

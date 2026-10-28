@@ -99,6 +99,7 @@ export function resetSession(sessionId: string): ProfileSession {
   session.activeQuestionCategory = 'about_you';
   session.history = [];
   session.changeHistory = [];
+  session.validationState = undefined;
   session.lastActive = Date.now();
   return session;
 }
@@ -184,6 +185,16 @@ export function mergeProfileUpdates(
     }
     if (partialUpdate.aboutYou.industry) {
       p.aboutYou.industry = partialUpdate.aboutYou.industry;
+    }
+    if (partialUpdate.aboutYou.email) {
+      session.changeHistory.push({
+        field: 'aboutYou.email',
+        oldValue: p.aboutYou.email,
+        newValue: partialUpdate.aboutYou.email,
+        timestamp: now,
+      });
+      p.aboutYou.email = partialUpdate.aboutYou.email;
+      p.email = partialUpdate.aboutYou.email;
     }
     if (partialUpdate.aboutYou.skipped !== undefined) {
       p.aboutYou.skipped = partialUpdate.aboutYou.skipped;

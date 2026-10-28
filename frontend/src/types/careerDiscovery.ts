@@ -1,3 +1,5 @@
+import type { CapabilityAssessmentRecord } from './validation';
+
 export type CareerIntent = 'career_decided' | 'career_exploring' | 'uncertain';
 
 export type CareerStage =
@@ -109,8 +111,10 @@ export interface StudentCareerProfile {
     yearsOfExperience?: string;
     industry?: string;
     graduationYear?: string;
+    email?: string;
     skipped?: boolean;
   };
+  email?: string;
   education: EducationInfo;
   skills: SkillItem[];
   skillsExplicitlyAbsent?: boolean;
@@ -122,6 +126,7 @@ export interface StudentCareerProfile {
   aiSuggestions?: AiSuggestions;
   pointASummary?: string;
   pointBSummary?: string;
+  capabilityAssessment?: CapabilityAssessmentRecord;
   status?: 'in_progress' | 'ready_for_review' | 'confirmed';
 }
 

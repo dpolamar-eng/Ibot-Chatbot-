@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../../../lib/utils';
-import { Target, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { CareerGoals } from '../../../types/careerDiscovery';
 
 interface GoalSelectorProps {
@@ -145,7 +145,7 @@ export const GoalSelector: React.FC<GoalSelectorProps> = ({
       {/* 3. Timeline */}
       <div>
         <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
-          Placement / Goal Timeline
+          Target Career Timeline
         </label>
         <div className="flex flex-wrap gap-1.5">
           {TIMELINES.map((t) => {

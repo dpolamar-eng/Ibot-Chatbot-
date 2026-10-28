@@ -6,7 +6,7 @@ import {
   resetSession,
 } from '../services/sessionStore.js';
 import { processStudentMessage } from '../services/extraction.js';
-import { generateQaReply } from '../services/gemini.js';
+import { generateQaReply, generateValidationReply } from '../services/gemini.js';
 import {
   persistChatTurn,
   confirmProfileInDb,
@@ -16,7 +16,7 @@ interface ChatRequestBody {
   message: string;
   sessionId?: string;
   structuredAnswer?: any;
-  mode?: 'discovery' | 'qa';
+  mode?: 'discovery' | 'qa' | 'validation';
   history?: Array<{ role: 'user' | 'model'; text: string }>;
 }
 
@@ -53,7 +53,7 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
             message: { type: 'string', minLength: 1, maxLength: 3000 },
             sessionId: { type: 'string', maxLength: 100 },
             structuredAnswer: { type: 'object' },
-            mode: { type: 'string', enum: ['discovery', 'qa'] },
+            mode: { type: 'string', enum: ['discovery', 'qa', 'validation'] },
             history: {
               type: 'array',
               items: {
@@ -81,6 +81,46 @@ export const chatRoutes: FastifyPluginAsync = async (fastify) => {
       try {
         // Retrieve or initialize session state
         const session = getOrCreateSession(sessionId);
+
+        // MODE 0: CAPABILITY VALIDATION MODE (14 Capability Dimensions Assessment)
+        if (mode === 'validation') {
+          const valResult = await generateValidationReply(
+            message.trim(),
+            session.validationState,
+            session.profile
+          );
+
+          session.validationState = valResult.validationState;
+
+          if (valResult.report) {
+            session.profile.capabilityAssessment = valResult.report;
+          }
+
+          // Asynchronously persist to Supabase schema
+          persistChatTurn({
+            sessionId: session.sessionId,
+            userMessage: message.trim(),
+            assistantReply: valResult.reply,
+            profile: session.profile,
+            activeCategory: 'capability_validation',
+            suggestedFollowUps: valResult.followupQuestions,
+            changeHistory: session.changeHistory,
+          }).catch((err) => fastify.log.error(err, 'Failed to persist Validation turn to Supabase'));
+
+          return reply.status(200).send({
+            sessionId: session.sessionId,
+            reply: valResult.reply,
+            profile: session.profile,
+            missingFields: session.missingFields,
+            sectionAnalyses: session.sectionAnalyses,
+            completionPercentage: session.completionPercentage,
+            activeQuestionCategory: 'capability_validation',
+            suggestedFollowUps: valResult.followupQuestions,
+            followupQuestions: valResult.followupQuestions,
+            changeHistory: session.changeHistory,
+            report: valResult.report,
+          });
+        }
 
         // MODE 1: Q&A MODE (Career Doubts & Goal Role Pathway Formulation)
         // Does NOT interrogate the user with missing-profile survey questions.

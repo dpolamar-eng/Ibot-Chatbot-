@@ -55,7 +55,7 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
       <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
         <FolderGit2 className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />
         <p className="leading-snug">
-          Projects or capstones demonstrate practical readiness. If you don&apos;t have projects yet, feel free to skip!
+          Practical accomplishments, professional achievements, or portfolio projects demonstrate real-world capability. If you are focusing on fundamentals or just getting started, you can skip this section!
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h4 className="text-sm font-bold text-slate-900">{proj.title}</h4>
+                  <span className="font-sans text-sm font-bold text-slate-900 block">{proj.title}</span>
                   {proj.description && (
                     <p className="text-xs text-slate-600 mt-1 leading-relaxed">
                       {proj.description}
@@ -119,9 +119,9 @@ export const ProjectLogger: React.FC<ProjectLoggerProps> = ({
           className="p-4 rounded-xl bg-white border border-[#2552f4] ring-2 ring-[#2552f4]/15 shadow-sm space-y-3"
         >
           <div className="flex items-center justify-between pb-1 border-b border-slate-100">
-            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            <span className="font-sans text-xs font-bold text-slate-900 uppercase tracking-wider block">
               Add Project / Practical Work
-            </h4>
+            </span>
             <button
               type="button"
               onClick={() => setIsAdding(false)}

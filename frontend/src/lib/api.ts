@@ -1,4 +1,5 @@
 import { StudentCareerProfile, SectionAnalysis } from '../types/careerDiscovery';
+import type { CapabilityAssessmentRecord } from '../types/validation';
 
 export interface ChatHistoryPayload {
   role: 'user' | 'model';
@@ -16,6 +17,7 @@ export interface ChatResponsePayload {
   suggestedFollowUps?: string[];
   followupQuestions?: string[]; // fallback alias
   changeHistory?: Array<{ field: string; oldValue: any; newValue: any; timestamp: string }>;
+  report?: CapabilityAssessmentRecord;
 }
 
 /**
@@ -27,7 +29,7 @@ export async function sendChatMessage(
   history: ChatHistoryPayload[] = [],
   sessionId?: string,
   structuredAnswer?: any,
-  mode: 'discovery' | 'qa' = 'discovery'
+  mode: 'discovery' | 'qa' | 'validation' = 'discovery'
 ): Promise<ChatResponsePayload> {
   const baseUrl = import.meta.env.VITE_API_URL || '';
   const endpoint = `${baseUrl}/api/chat`;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../../../lib/utils';
-import { Code, Cpu, Database, Cloud, Smartphone, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { CareerInterests } from '../../../types/careerDiscovery';
 
 interface InterestSelectorProps {
@@ -13,31 +13,26 @@ const PROBLEM_SPACES = [
     id: 'ai_tech',
     title: 'Applied AI & Tech Systems',
     description: 'Software engineering, AI automation, cloud platforms & scalable digital products.',
-    icon: Cpu,
   },
   {
     id: 'finance_analytics',
     title: 'Finance & Business Analytics',
     description: 'Financial analysis, quantitative modeling, metrics dashboards & market economics.',
-    icon: Database,
   },
   {
     id: 'product_growth',
     title: 'Product Strategy & Growth',
     description: 'Roadmapping, customer discovery, market positioning & user adoption.',
-    icon: Code,
   },
   {
     id: 'ops_systems',
     title: 'Operations & Process Scale',
     description: 'Workflow efficiency, supply chain, cross-functional execution & organizational scale.',
-    icon: Cloud,
   },
   {
     id: 'creative_media',
     title: 'Design, UX & Creative Media',
     description: 'User experience research, interface design, brand storytelling & content strategy.',
-    icon: Smartphone,
   },
 ];
 
@@ -78,7 +73,6 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {PROBLEM_SPACES.map((space) => {
-            const Icon = space.icon;
             const isSelected = value.primaryTracks.includes(space.id);
 
             return (
@@ -87,29 +81,19 @@ export const InterestSelector: React.FC<InterestSelectorProps> = ({
                 type="button"
                 onClick={() => handleToggleTrack(space.id)}
                 className={cn(
-                  'px-3 py-2 rounded-xl border text-left transition-all duration-150 flex items-center gap-2.5 cursor-pointer',
+                  'px-3.5 py-2.5 rounded-xl border text-left transition-all duration-150 flex flex-col justify-center cursor-pointer',
                   isSelected
                     ? 'bg-blue-50/80 border-[#2552f4] ring-1 ring-[#2552f4]/20 shadow-2xs'
                     : 'bg-white border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/60'
                 )}
               >
-                <div
-                  className={cn(
-                    'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
-                    isSelected ? 'bg-[#2552f4] text-white' : 'bg-slate-100 text-slate-600'
-                  )}
-                >
-                  <Icon className="w-3.5 h-3.5" />
+                <div className="flex items-center justify-between gap-1 w-full">
+                  <span className="font-sans text-xs font-bold text-slate-900 truncate">{space.title}</span>
+                  {isSelected && <Check className="w-3.5 h-3.5 text-[#2552f4] stroke-[2.5] shrink-0" />}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <h4 className="text-xs font-bold text-slate-900 truncate">{space.title}</h4>
-                    {isSelected && <Check className="w-3.5 h-3.5 text-[#2552f4] stroke-[2.5] shrink-0" />}
-                  </div>
-                  <p className="text-[10.5px] text-slate-500 truncate leading-tight mt-0.5">
-                    {space.description}
-                  </p>
-                </div>
+                <p className="font-sans text-[10.5px] text-slate-500 leading-snug mt-1">
+                  {space.description}
+                </p>
               </button>
             );
           })}

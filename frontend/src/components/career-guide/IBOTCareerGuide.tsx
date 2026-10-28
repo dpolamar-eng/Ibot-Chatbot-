@@ -11,6 +11,7 @@ import {
   getInitialMessages,
   getCurrentTimeString,
   getMockAssistantReply,
+  TOTAL_GUIDED_STEPS,
   type ChatMessage,
   type QuickReplyOption,
 } from './mockCareerChatData';
@@ -18,6 +19,7 @@ import avatarImg from '../../assets/ibot-avatar-generated.png';
 import { sendChatMessage, confirmStudentProfileApi, resetSessionApi } from '../../lib/api';
 import { INITIAL_STUDENT_PROFILE } from '../../mock/careerDiscoveryDefaults';
 import { StudentCareerProfile, SectionAnalysis } from '../../types/careerDiscovery';
+import type { CareerIntentType } from './inputs/IntentSelector';
 
 export interface IBOTCareerGuideProps {
   className?: string;
@@ -35,14 +37,36 @@ export interface IBOTCareerGuideProps {
   onComplete?: (profileData: any) => void;
 }
 
-const STEP_TITLES: Record<number, string> = {
-  1: 'Current Position (Point A)',
-  2: 'Education & Qualifications',
-  3: 'Skills & Capabilities',
-  4: 'Practical Experience & Accomplishments',
-  5: 'Interests & Work Preferences',
-  6: 'Career Destination & Goals (Point B)',
-  7: 'Career Synthesis & Review',
+const getStepTitle = (
+  stepIdx: number,
+  intent: CareerIntentType = 'career_decided',
+  isGuided: boolean = true
+): string => {
+  if (!isGuided) {
+    if (stepIdx === 0) return 'Welcome & Updates';
+    return 'Career Transition & Goal Pathway';
+  }
+  switch (stepIdx) {
+    case 0:
+      return 'Welcome & Updates';
+    case 1:
+      return 'Journey Track';
+    case 2:
+      return intent === 'career_exploring'
+        ? 'Interests & Work Preferences'
+        : 'Target Destination & Goals (Point B)';
+    case 3:
+      return 'Current Position (Point A)';
+    case 4:
+      return 'Education & Qualifications';
+    case 5:
+      return 'Skills & Capabilities';
+    case 6:
+      return 'Practical Experience & Accomplishments';
+    case 7:
+    default:
+      return 'Career Synthesis & Review';
+  }
 };
 
 export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
@@ -62,11 +86,16 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
 }) => {
   const effectiveMode: 'panel' | 'drawer' | 'floating' = isFloating ? 'floating' : mode;
 
-  // Mode switcher: Guided Discovery (structured 6-step intake) vs Freeform Q&A
-  const [isGuidedMode, setIsGuidedMode] = useState<boolean>(initialMode === 'guided');
+  // Mode switcher: Guided Discovery (structured 6-step intake) vs Freeform Q&A vs Capability Validation
+  const [chatMode, setChatMode] = useState<'discovery' | 'qa' | 'validation'>(
+    initialMode === 'guided' ? 'discovery' : 'qa'
+  );
+  const isGuidedMode = chatMode === 'discovery';
+  const setIsGuidedMode = (guided: boolean) => setChatMode(guided ? 'discovery' : 'qa');
 
-  // Guided flow state
-  const [currentStepIndex, setCurrentStepIndex] = useState<number>(1);
+  // Guided flow state (starts at 0 for welcome/email prompt)
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(0);
+  const [careerIntent, setCareerIntent] = useState<CareerIntentType>('career_decided');
   const [profileData, setProfileData] = useState<Record<string, any>>({});
 
   // Dynamic Profiling Session State (Phase 2)
@@ -87,6 +116,15 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
   const [hasPlayedIntro, setHasPlayedIntro] = useState<boolean>(skipIntroAnimation);
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isInternalMinimized, setIsInternalMinimized] = useState<boolean>(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+
+  // Once chat has started (user has sent a message or moved past step 0), disable toggling between Discovery and Q&A
+  const hasChatStarted = messages.some((m) => m.sender === 'user') || currentStepIndex > 0;
+
+  // Check if there are active response boxes / input forms on top
+  const hasActiveResponseBoxes =
+    (isGuidedMode && currentStepIndex <= TOTAL_GUIDED_STEPS) ||
+    messages.some((m) => m.sender === 'assistant' && !!m.inputType && !m.isCompletedStep);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -119,6 +157,8 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
   }, [hasPlayedIntro]);
 
   const isInitialMount = useRef<boolean>(true);
+  const prevMessagesLength = useRef<number>(messages.length);
+  const prevLastMessageId = useRef<string | undefined>(messages[messages.length - 1]?.id);
 
   // Ensure on initial mount/reload that the window and container always start at the very top
   useEffect(() => {
@@ -139,6 +179,44 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     });
   };
 
+  // Scroll to a specific message's top so the response starts cleanly from the top
+  const scrollToMessageTop = (messageId?: string, behavior: ScrollBehavior = 'smooth') => {
+    const performScroll = () => {
+      const container = scrollContainerRef.current;
+      if (!container) return;
+
+      let element: HTMLElement | null = null;
+      if (messageId) {
+        element = container.querySelector(`[data-message-id="${messageId}"]`);
+      }
+
+      if (!element) {
+        const allMsgElements = container.querySelectorAll('[data-message-id]');
+        if (allMsgElements.length > 0) {
+          element = allMsgElements[allMsgElements.length - 1] as HTMLElement;
+        }
+      }
+
+      if (element) {
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const currentScrollTop = container.scrollTop;
+        const offsetFromContainerTop = elementRect.top - containerRect.top;
+        // Position message cleanly at the top of the container with an 8px margin
+        const targetScrollTop = currentScrollTop + offsetFromContainerTop - 8;
+
+        container.scrollTo({
+          top: Math.max(0, targetScrollTop),
+          behavior,
+        });
+      }
+    };
+
+    // Immediate frame + short stabilization frame to ensure nested subcomponents (e.g. selectors) are laid out
+    requestAnimationFrame(performScroll);
+    setTimeout(performScroll, 50);
+  };
+
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
@@ -146,14 +224,31 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
         scrollContainerRef.current.scrollTop = 0;
       }
       window.scrollTo(0, 0);
+      prevMessagesLength.current = messages.length;
+      prevLastMessageId.current = messages[messages.length - 1]?.id;
       return;
     }
 
-    // Only auto-scroll to bottom for subsequent messages, typing state, or quick replies
-    if (messages.length > 1 || isTyping || (quickReplies && quickReplies.length > 0)) {
-      scrollToBottom('smooth');
+    const lastMsg = messages[messages.length - 1];
+    if (!lastMsg) return;
+
+    const hasNewMessage =
+      messages.length !== prevMessagesLength.current ||
+      lastMsg.id !== prevLastMessageId.current;
+
+    prevMessagesLength.current = messages.length;
+    prevLastMessageId.current = lastMsg.id;
+
+    if (hasNewMessage) {
+      if (lastMsg.sender === 'assistant') {
+        // When assistant gives an answer, ALWAYS start the message from the top
+        scrollToMessageTop(lastMsg.id, 'smooth');
+      } else {
+        // When user sends a message, gently scroll to reveal it
+        scrollToBottom('smooth');
+      }
     }
-  }, [messages, isTyping, quickReplies]);
+  }, [messages]);
 
   // Confirm student profile (Phase 2 review card action)
   const handleConfirmProfile = async () => {
@@ -161,23 +256,23 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     try {
       await confirmStudentProfileApi(sessionId);
       setProfile((prev) => ({ ...prev, status: 'confirmed' }));
-      const targetRole = profile?.goals?.targetRoles?.[0] || 'your goal role';
+      const targetRole = profile?.goals?.targetRoles?.[0] || 'Python Backend Developer';
       const confirmMsg: ChatMessage = {
         id: `confirm-${Date.now()}`,
         sender: 'assistant',
-        text: `🎉 **Career Profile Verified & Confirmed!**\n\nYour self-reported Point A to Point B profile is securely saved in your session.\n\n🎯 **Final Destination: Goal Role Pathway**\nNow that your background and destination are established, let's create your step-by-step pathway to reach **${targetRole}**. You can also clarify any career doubts!`,
+        text: `🎉 **Career Profile Verified & Confirmed! (Outcome: Profile Complete)**\n\nYour self-reported Point A to Point B profile is securely saved in your session.\n\n🎯 **What would you like to do next?**\n1. **Capability Validation:** Test your knowledge, reasoning, and practical deliverables against the 14 approved dimensions for **${targetRole}**.\n2. **Goal Role Pathway:** Create your step-by-step roadmap from Point A to Point B.\n3. **Career Q&A:** Clarify any industry doubts, tools, or transition questions.`,
         timestamp: getCurrentTimeString(),
         followupQuestions: [
+          `🛡️ Validate My Capabilities for ${targetRole}`,
           `🚀 Generate My Step-by-Step Pathway to ${targetRole}`,
           `What are my biggest capability gaps for ${targetRole}?`,
-          `Clarify a career transition doubt`,
         ],
       };
       setMessages((prev) => [...prev, confirmMsg]);
       setQuickReplies([
-        { id: 'pathway-dest', label: `🚀 Generate My Step-by-Step Pathway to ${targetRole}`, highlighted: true },
+        { id: 'val-dest', label: `🛡️ Validate My Capabilities for ${targetRole}`, highlighted: true },
+        { id: 'pathway-dest', label: `🚀 Generate My Step-by-Step Pathway to ${targetRole}` },
         { id: 'gaps', label: `What are my biggest capability gaps for ${targetRole}?` },
-        { id: 'qa-doubt', label: `Clarify a career transition doubt` },
       ]);
       onComplete?.(profile);
     } catch (err) {
@@ -191,12 +286,16 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     setIsScrolled(false);
     setIsTyping(false);
     setQuickReplies([]);
-    setCurrentStepIndex(1);
+    setCurrentStepIndex(0);
+    setCareerIntent('career_decided');
+    prevMessagesLength.current = 1;
+    prevLastMessageId.current = undefined;
     setProfile(INITIAL_STUDENT_PROFILE);
     setProfileData({});
     setCompletionPercentage(0);
     setMissingFields([]);
     setActiveQuestionCategory('about_you');
+    setEditingMessageId(null);
 
     if (sessionId) {
       resetSessionApi(sessionId).catch(console.warn);
@@ -219,13 +318,14 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
   // Switch between Guided Discovery and Q&A modes
   const handleToggleGuidedMode = (guided: boolean) => {
     if (guided === isGuidedMode) return;
+    if (hasChatStarted) return; // Prevent switching once chat has started in either section
     setIsGuidedMode(guided);
     setIsTyping(false);
     setQuickReplies([]);
 
     if (guided) {
       // Switch to guided discovery
-      setCurrentStepIndex(1);
+      setCurrentStepIndex(0);
       setMessages([getGuidedInitialMessage()]);
     } else {
       // Switch to Q&A mode
@@ -263,13 +363,97 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       text: formattedAnswerText,
       timestamp: getCurrentTimeString(),
       status: 'read',
+      stepIndex,
+      stepData,
     };
     setMessages((prev) => [...prev, userMsg]);
     setIsTyping(true);
 
+    // If answering the initial welcome email prompt in Career Q&A mode:
+    if (!isGuidedMode && stepIndex === 0) {
+      setIsTyping(false);
+      const emailAck = stepData?.email
+        ? `Thank you! 📬 We've saved your email (**${stepData.email}**) to send your tailored transition blueprint.\n\n`
+        : `No problem at all! 👍\n\n`;
+
+      const transitionMsg: ChatMessage = {
+        id: `asst-transition-${Date.now()}`,
+        sender: 'assistant',
+        text: `${emailAck}**Ready to transition from your existing career?** 🚀\n\nTell us your current role, experience, target destination, and weekly study bandwidth. We'll generate an executive **4-Pillar Career Transition Blueprint** highlighting your transferable strengths, bridge projects, and realistic part-time roadmap.`,
+        timestamp: getCurrentTimeString(),
+        inputType: 'transition_navigator',
+        stepIndex: 1,
+        stepTitle: 'Career Transition Navigator',
+      };
+      setCurrentStepIndex(1);
+      setMessages((prev) => [...prev, transitionMsg]);
+      setQuickReplies([]);
+      return;
+    }
+
+    // If user chose open-ended Q&A instead of transition card:
+    if (!isGuidedMode && stepData?.openEndedQa) {
+      setIsTyping(false);
+      const openQaMsg: ChatMessage = {
+        id: `asst-open-qa-${Date.now()}`,
+        sender: 'assistant',
+        text: `Sure thing! Feel free to ask any career transition, technical doubt, interview, or salary question below. Or click one of the common topics to begin:`,
+        timestamp: getCurrentTimeString(),
+        followupQuestions: [
+          'How do I transition from QA to Full Stack Developer?',
+          'Which AI skills are most in demand in 2026?',
+          'How do I explain a career switch in interviews?',
+          'What projects can prove my capability without prior job experience?',
+        ],
+      };
+      setMessages((prev) => [...prev, openQaMsg]);
+      setQuickReplies([
+        { id: 'qa-1', label: 'How do I transition from QA to Full Stack Developer?', highlighted: true },
+        { id: 'qa-2', label: 'Which AI skills are most in demand in 2026?' },
+        { id: 'qa-3', label: 'How do I explain a career switch in interviews?' },
+        { id: 'qa-4', label: 'What projects prove my capability without job experience?' },
+      ]);
+      return;
+    }
+
     // 3. Format structured payload for backend profile merge
     let structuredAnswer: any = null;
-    if (stepIndex === 1) {
+    const activeIntent: CareerIntentType =
+      stepIndex === 1 && stepData?.careerIntent ? stepData.careerIntent : careerIntent;
+
+    if (stepIndex === 1 && stepData?.careerIntent) {
+      setCareerIntent(stepData.careerIntent);
+    }
+
+    if (!isGuidedMode) {
+      structuredAnswer = {
+        careerTransition: {
+          currentRole: stepData?.currentRole,
+          experienceYears: stepData?.experienceYears,
+          targetRole: stepData?.targetRole,
+          bandwidthWeekly: stepData?.bandwidthWeekly,
+        },
+        goals: {
+          targetRoles: stepData?.targetRole ? [stepData.targetRole] : [],
+        },
+      };
+    } else if (stepIndex === 0) {
+      if (stepData?.email) {
+        structuredAnswer = {
+          aboutYou: { email: stepData.email },
+        };
+      }
+    } else if (stepIndex === 1) {
+      structuredAnswer = {
+        careerIntent: activeIntent,
+      };
+    } else if (stepIndex === 2) {
+      if (activeIntent === 'career_decided') {
+        structuredAnswer = { goals: stepData.goals || stepData };
+      } else {
+        structuredAnswer = { interests: stepData.interests || stepData };
+      }
+    } else if (stepIndex === 3) {
       structuredAnswer = {
         aboutYou: {
           currentStage: stepData.stageId || stepData.currentStage,
@@ -279,16 +463,16 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
           graduationYear: stepData.gradYear || stepData.graduationYear,
         },
       };
-    } else if (stepIndex === 2) {
-      structuredAnswer = { education: stepData };
-    } else if (stepIndex === 3) {
-      structuredAnswer = { skills: stepData };
     } else if (stepIndex === 4) {
-      structuredAnswer = { practicalExperience: stepData };
+      structuredAnswer = { education: stepData.education || stepData };
     } else if (stepIndex === 5) {
-      structuredAnswer = { interests: stepData };
+      structuredAnswer = { skills: stepData.skills || stepData };
     } else if (stepIndex === 6) {
-      structuredAnswer = { goals: stepData };
+      if (stepData.skipped) {
+        structuredAnswer = { practicalExperience: { skipped: true, projects: [] } };
+      } else {
+        structuredAnswer = { practicalExperience: { projects: stepData.projects || [] } };
+      }
     }
 
     try {
@@ -305,7 +489,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
         boundedHistory,
         sessionId,
         structuredAnswer,
-        'discovery'
+        isGuidedMode ? 'discovery' : 'qa'
       );
 
       setSessionId(res.sessionId);
@@ -315,40 +499,117 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       if (res.activeQuestionCategory) setActiveQuestionCategory(res.activeQuestionCategory);
       if (res.sectionAnalyses) setSectionAnalyses(res.sectionAnalyses);
 
+      // In Q&A mode: render the 4-pillar transition blueprint directly!
+      if (!isGuidedMode) {
+        const transitionBlueprintMsg: ChatMessage = {
+          id: `asst-blueprint-${Date.now()}`,
+          sender: 'assistant',
+          text: res.reply,
+          timestamp: getCurrentTimeString(),
+          followupQuestions:
+            res.followupQuestions && res.followupQuestions.length > 0
+              ? res.followupQuestions
+              : [
+                  'How do I re-position my resume for this pivot?',
+                  'What are the most common interview traps for career switchers?',
+                  'Can you elaborate on the Bridge Project specifications?',
+                  'What salary expectation should I set during the transition?',
+                ],
+        };
+        setMessages((prev) => [...prev, transitionBlueprintMsg]);
+        if (transitionBlueprintMsg.followupQuestions) {
+          setQuickReplies(
+            transitionBlueprintMsg.followupQuestions.map((q, i) => ({
+              id: `qr-trans-${i}`,
+              label: q,
+              highlighted: i === 0,
+            }))
+          );
+        }
+        return;
+      }
+
       const nextStep = stepIndex + 1;
       setCurrentStepIndex(nextStep);
 
       // If finished all sections or ready for review, render the Review Card
       if (res.completionPercentage === 100 || res.activeQuestionCategory === 'review' || nextStep >= 7) {
+        const isDecided = activeIntent === 'career_decided';
+        const defaultSynthesis = isDecided
+          ? 'Congratulations! 🎉 Your career profile mapping is complete. Below is your synthesized Point A to Point B overview, capability gap analysis, and tailored roadmap toward your target role:'
+          : 'Congratulations! 🎉 Your career profile mapping is complete. Below is your synthesized profile, curated role discovery matches based on your interests, and recommended next steps:';
         const reviewMsg: ChatMessage = {
           id: `summary-review-${Date.now()}`,
           sender: 'assistant',
-          text: `${res.reply}\n\nHere is your **Self-Reported Career Profile Summary**. Please review the details below. You can confirm it or make any corrections:`,
+          text: `${res.reply || defaultSynthesis}\n\nHere is your **Self-Reported Career Profile Summary**. Please review the details below. You can confirm it or make any corrections:`,
           timestamp: getCurrentTimeString(),
           inputType: 'summary_card',
           stepData: res.profile,
-          followupQuestions: ['Confirm Profile', 'I want to update my skills', 'I want to update my target roles'],
+          followupQuestions: isDecided
+            ? ['Confirm Profile', 'What are my primary capability gaps?', 'Build my step-by-step learning roadmap', 'High-impact projects for this role']
+            : ['Confirm Profile', 'Compare top recommended career paths', 'What transferable skills can I leverage?', 'How to structure my learning timeline?'],
         };
         setMessages((prev) => [...prev, reviewMsg]);
         onComplete?.(res.profile);
       } else {
-        const nextAssistantMsg = getGuidedStepMessage(nextStep, res.profile);
-        if (res.reply) {
+        const nextAssistantMsg = getGuidedStepMessage(nextStep, res.profile, activeIntent);
+        if (stepIndex === 0) {
+          const emailAck = stepData?.email
+            ? `Thank you! 📬 We've saved your email (**${stepData.email}**) to send you your detailed career ladder profile.\n\n`
+            : `No problem at all! 👍\n\n`;
+          nextAssistantMsg.text = `${emailAck}${nextAssistantMsg.text}`;
+        } else if (res.reply) {
           nextAssistantMsg.text = `${res.reply}\n\n${nextAssistantMsg.text}`;
         }
         setMessages((prev) => [...prev, nextAssistantMsg]);
       }
 
-      if (res.followupQuestions && res.followupQuestions.length > 0) {
+      if (isGuidedMode && nextStep <= TOTAL_GUIDED_STEPS) {
+        setQuickReplies([]);
+      } else if (res.followupQuestions && res.followupQuestions.length > 0) {
         setQuickReplies(res.followupQuestions.map((q, i) => ({ id: `qr-${i}`, label: q })));
+      } else {
+        setQuickReplies([]);
       }
     } catch (err) {
-      console.warn('Backend call failed, continuing with local step:', err);
+      console.warn('Backend call failed, continuing with fallback:', err);
+      if (!isGuidedMode) {
+        const fallback = getMockAssistantReply(formattedAnswerText);
+        const fallbackMsg: ChatMessage = {
+          id: `asst-fallback-${Date.now()}`,
+          sender: 'assistant',
+          text: fallback.replyText,
+          timestamp: getCurrentTimeString(),
+          followupQuestions: fallback.followupQuestions || [
+            'How do I re-position my resume for this pivot?',
+            'What are the most common interview traps for career switchers?',
+            'Can you elaborate on the Bridge Project specifications?',
+            'What salary expectation should I set during the transition?',
+          ],
+        };
+        setMessages((prev) => [...prev, fallbackMsg]);
+        setQuickReplies(
+          fallback.nextReplies || [
+            { id: 'fallback-1', label: 'How do I re-position my resume for this pivot?', highlighted: true },
+            { id: 'fallback-2', label: 'What are the most common interview traps for career switchers?' },
+            { id: 'fallback-3', label: 'Can you elaborate on the Bridge Project specifications?' },
+            { id: 'fallback-4', label: 'What salary expectation should I set during the transition?' },
+          ]
+        );
+        return;
+      }
       const nextStep = stepIndex + 1;
-      const nextProfile = { ...profileData, [`step_${stepIndex}`]: stepData };
+      const nextProfile = { ...profileData, [`step_${stepIndex}`]: stepData, careerIntent: activeIntent };
       setProfileData(nextProfile);
       setCurrentStepIndex(nextStep);
-      const nextAssistantMsg = getGuidedStepMessage(nextStep, nextProfile);
+      setQuickReplies([]);
+      const nextAssistantMsg = getGuidedStepMessage(nextStep, nextProfile, activeIntent);
+      if (stepIndex === 0) {
+        const emailAck = stepData?.email
+          ? `Thank you! 📬 We've saved your email (**${stepData.email}**) to send you your detailed career ladder profile.\n\n`
+          : `No problem at all! 👍\n\n`;
+        nextAssistantMsg.text = `${emailAck}${nextAssistantMsg.text}`;
+      }
       setMessages((prev) => [...prev, nextAssistantMsg]);
     } finally {
       setIsTyping(false);
@@ -360,6 +621,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     if (currentStepIndex <= 1) return;
 
     const targetStep = currentStepIndex - 1;
+    setQuickReplies([]);
 
     setMessages((prev) => {
       const filtered = prev.filter((m) => {
@@ -374,14 +636,123 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     });
 
     setCurrentStepIndex(targetStep);
+    const targetMsg = messages.find((m) => m.stepIndex === targetStep && m.sender === 'assistant');
+    if (targetMsg) {
+      scrollToMessageTop(targetMsg.id, 'smooth');
+    }
   };
 
   // Re-open an earlier answered step
   const handleReopenStep = (stepIndex: number) => {
+    setQuickReplies([]);
     setMessages((prev) =>
       prev.map((m) => (m.stepIndex === stepIndex ? { ...m, isCompletedStep: false } : m))
     );
     setCurrentStepIndex(stepIndex);
+    const targetMsg = messages.find((m) => m.stepIndex === stepIndex && m.sender === 'assistant');
+    if (targetMsg) {
+      scrollToMessageTop(targetMsg.id, 'smooth');
+    }
+  };
+
+  // Handle selection of a suggested follow-up option from an assistant message
+  const handleSelectFollowup = (question: string, assistantMessageId?: string) => {
+    if (assistantMessageId) {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantMessageId
+            ? { ...m, selectedOption: question, isCompletedStep: true }
+            : m
+        )
+      );
+    }
+    handleSendMessage(question);
+  };
+
+  // Edit an existing user response
+  const handleEditUserMessage = async (messageId: string, newText: string, stepIndex?: number) => {
+    setEditingMessageId(null);
+
+    // 1. Update the message text and mark as edited, and update parent option tracking
+    setMessages((prev) => {
+      const targetIdx = prev.findIndex((m) => m.id === messageId);
+      return prev.map((m, idx) => {
+        if (m.id === messageId) {
+          return { ...m, text: newText, isEdited: true };
+        }
+        if (targetIdx !== -1 && idx === targetIdx - 1 && m.sender === 'assistant') {
+          return { ...m, selectedOption: newText };
+        }
+        return m;
+      });
+    });
+
+    // 2. If it's a guided step response, reopen the step selector
+    if (stepIndex !== undefined && stepIndex >= 0) {
+      handleReopenStep(stepIndex);
+      return;
+    }
+
+    // 3. Re-trigger chatbot reply for this edited question
+    setIsTyping(true);
+    try {
+      const editIdx = messages.findIndex((m) => m.id === messageId);
+      const priorMessages = editIdx !== -1 ? messages.slice(0, editIdx) : messages;
+
+      const boundedHistory = priorMessages
+        .filter((m) => m.id !== messageId && m.text && m.text.trim().length > 0 && m.inputType !== 'summary_card')
+        .slice(-10)
+        .map((m) => ({
+          role: (m.sender === 'assistant' ? 'model' : 'user') as 'model' | 'user',
+          text: m.text,
+        }));
+
+      const res = await sendChatMessage(
+        newText,
+        boundedHistory,
+        sessionId,
+        null,
+        chatMode === 'validation' ? 'validation' : isGuidedMode ? 'discovery' : 'qa'
+      );
+
+      setSessionId(res.sessionId);
+      if (res.profile) setProfile(res.profile);
+
+      // Truncate any obsolete messages that were after the edited message and append fresh reply
+      setMessages((prev) => {
+        const curEditIdx = prev.findIndex((m) => m.id === messageId);
+        if (curEditIdx !== -1) {
+          const updated = prev.slice(0, curEditIdx + 1);
+          updated.push({
+            id: `asst-edit-reply-${Date.now()}`,
+            sender: 'assistant',
+            text: res.reply,
+            timestamp: getCurrentTimeString(),
+            followupQuestions: res.followupQuestions,
+          });
+          return updated;
+        } else {
+          return [
+            ...prev,
+            {
+              id: `asst-edit-reply-${Date.now()}`,
+              sender: 'assistant',
+              text: res.reply,
+              timestamp: getCurrentTimeString(),
+              followupQuestions: res.followupQuestions,
+            },
+          ];
+        }
+      });
+
+      if (res.followupQuestions && res.followupQuestions.length > 0) {
+        setQuickReplies(res.followupQuestions.map((q, i) => ({ id: `qr-${i}`, label: q })));
+      }
+    } catch (err) {
+      console.warn('Failed to regenerate response for edited message:', err);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   // Freeform text message submission (extracts profile details dynamically via Gemini)
@@ -389,7 +760,9 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
     if (!text || text.trim().length === 0) return;
 
     if (text.trim() === 'Start Guided Career Discovery') {
-      handleToggleGuidedMode(true);
+      if (!hasChatStarted) {
+        handleToggleGuidedMode(true);
+      }
       return;
     }
 
@@ -422,23 +795,36 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
         }));
 
       // Determine effective mode:
-      // If user asks for Goal Role Pathway or clarifies doubts, route directly to Q&A mode
+      const isValidationTrigger =
+        text.toLowerCase().includes('validate my capabilities') ||
+        text.toLowerCase().includes('validate capabilities') ||
+        text.toLowerCase().includes('start capability validation') ||
+        text.toLowerCase().includes('take capability assessment') ||
+        text.toLowerCase().includes('retake assessment') ||
+        chatMode === 'validation';
+
       const isPathwayOrDoubt =
         text.includes('Generate My Step-by-Step Pathway') ||
         text.includes('Goal Role Pathway') ||
         text.toLowerCase().includes('create my pathway') ||
         text.toLowerCase().includes('roadmap') ||
-        !isGuidedMode;
+        (!isGuidedMode && !isValidationTrigger);
 
-      const effectiveMode: 'discovery' | 'qa' = isPathwayOrDoubt ? 'qa' : 'discovery';
+      let effectiveApiMode: 'discovery' | 'qa' | 'validation' = 'discovery';
 
-      // Switch UI to Q&A if pathway generation was selected from discovery
-      if (isPathwayOrDoubt && isGuidedMode) {
-        setIsGuidedMode(false);
+      if (isValidationTrigger && !text.includes('Generate My Step-by-Step Pathway')) {
+        effectiveApiMode = 'validation';
+        setChatMode('validation');
+      } else if (isPathwayOrDoubt) {
+        effectiveApiMode = 'qa';
+        setChatMode('qa');
+      } else {
+        effectiveApiMode = 'discovery';
+        setChatMode('discovery');
       }
 
-      // Call backend Gemini extraction or QA endpoint
-      const result = await sendChatMessage(text, boundedHistory, sessionId, undefined, effectiveMode);
+      // Call backend Gemini extraction, QA, or Validation endpoint
+      const result = await sendChatMessage(text, boundedHistory, sessionId, undefined, effectiveApiMode);
 
       setSessionId(result.sessionId);
       if (result.profile) setProfile(result.profile);
@@ -448,7 +834,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
       if (result.sectionAnalyses) setSectionAnalyses(result.sectionAnalyses);
 
       // If in Discovery mode and complete / ready for review, show the review card
-      if (effectiveMode === 'discovery' && (result.completionPercentage === 100 || result.activeQuestionCategory === 'review')) {
+      if (effectiveApiMode === 'discovery' && (result.completionPercentage === 100 || result.activeQuestionCategory === 'review')) {
         const reviewMsg: ChatMessage = {
           id: `summary-review-${Date.now()}`,
           sender: 'assistant',
@@ -539,7 +925,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
   }
 
   // Active step title
-  const activeStepTitle = STEP_TITLES[currentStepIndex] || 'Career Discovery';
+  const activeStepTitle = getStepTitle(currentStepIndex, careerIntent, isGuidedMode);
 
   // Inner chat container contents
   const ChatContent = (
@@ -560,7 +946,9 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
         mode={effectiveMode}
         subtitle={
           subtitle ||
-          (isGuidedMode
+          (chatMode === 'validation'
+            ? 'Capability Validation: Objective Knowledge, Reasoning & Evidence'
+            : isGuidedMode
             ? 'Discovery Phase: Identify your Point A background & Point B destination'
             : 'Career Q&A: Clarify doubts & build your goal role pathway')
         }
@@ -570,6 +958,7 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
         isGuidedMode={isGuidedMode}
         completionPercentage={completionPercentage}
         onToggleGuidedMode={handleToggleGuidedMode}
+        isModeSwitchDisabled={hasChatStarted}
         onClose={onClose}
         onMinimize={effectiveMode !== 'panel' || onMinimize ? handleMinimize : undefined}
         onRefresh={handleRefresh}
@@ -596,27 +985,75 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
             scrollbarColor: '#e2e8f0 transparent',
           }}
         >
-          {messages.map((msg, index) => (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              isIntroWaving={index === 0 && !hasPlayedIntro}
-              onSelectFollowup={handleSendMessage}
-              onSubmitInteractiveAnswer={handleSubmitInteractiveAnswer}
-              onReopenStep={handleReopenStep}
-              onPreviousStep={handlePreviousStep}
-              onConfirmProfile={handleConfirmProfile}
-              canGoBack={currentStepIndex > 1}
-              disabled={isTyping}
-              profile={profile}
-              sectionAnalyses={sectionAnalyses}
-            />
-          ))}
+          {messages.map((msg, index) => {
+            // Find the immediate subsequent user message answering this assistant message
+            const subsequentUserMsg = messages
+              .slice(index + 1)
+              .find((m) => m.sender === 'user');
+
+            // Find the immediate parent assistant message for this user message
+            const parentAssistantMsg =
+              msg.sender === 'user'
+                ? messages
+                    .slice(0, index)
+                    .reverse()
+                    .find((m) => m.sender === 'assistant')
+                : undefined;
+
+            // Is the response to this assistant message currently being edited?
+            const isResponseBeingEdited =
+              msg.sender === 'assistant' &&
+              editingMessageId !== null &&
+              subsequentUserMsg?.id === editingMessageId;
+
+            // Older options are disabled if a user message has already been sent,
+            // UNLESS the user is currently editing their response to this message!
+            const isOptionsDisabled =
+              msg.sender === 'assistant' &&
+              !!subsequentUserMsg &&
+              !isResponseBeingEdited;
+
+            // Determine which option was selected (if any)
+            const selectedOption =
+              msg.selectedOption ||
+              (subsequentUserMsg ? subsequentUserMsg.text : undefined);
+
+            return (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                isIntroWaving={index === 0 && !hasPlayedIntro}
+                onSelectFollowup={(q) => {
+                  if (isResponseBeingEdited && subsequentUserMsg) {
+                    handleEditUserMessage(subsequentUserMsg.id, q, subsequentUserMsg.stepIndex);
+                  } else {
+                    handleSelectFollowup(q, msg.id);
+                  }
+                }}
+                onSubmitInteractiveAnswer={handleSubmitInteractiveAnswer}
+                onReopenStep={handleReopenStep}
+                onPreviousStep={handlePreviousStep}
+                onConfirmProfile={handleConfirmProfile}
+                onEditUserMessage={handleEditUserMessage}
+                isEditing={editingMessageId === msg.id}
+                onStartEdit={() => setEditingMessageId(msg.id)}
+                onCancelEdit={() => setEditingMessageId(null)}
+                parentFollowupQuestions={parentAssistantMsg?.followupQuestions}
+                isOptionsDisabled={isOptionsDisabled}
+                selectedOption={selectedOption}
+                isResponseBeingEdited={isResponseBeingEdited}
+                canGoBack={currentStepIndex > 1}
+                disabled={isTyping}
+                profile={profile}
+                sectionAnalyses={sectionAnalyses}
+              />
+            );
+          })}
 
           {isTyping && <TypingIndicator />}
 
-          {/* Follow-up Quick Reply Pills */}
-          {quickReplies && quickReplies.length > 0 && !isTyping && (
+          {/* Follow-up Quick Reply Pills (only shown when no response boxes are active on top) */}
+          {quickReplies && quickReplies.length > 0 && !isTyping && !hasActiveResponseBoxes && (
             <QuickReplies
               options={quickReplies}
               onSelect={handleSelectQuickReply}
@@ -633,7 +1070,9 @@ export const IBOTCareerGuide: React.FC<IBOTCareerGuideProps> = ({
             onSendMessage={handleSendMessage}
             disabled={isTyping}
             placeholder={
-              isGuidedMode && currentStepIndex <= 6
+              chatMode === 'validation'
+                ? 'Type your answer, or paste project link/code...'
+                : isGuidedMode && currentStepIndex <= 6
                 ? 'Select answer above or specify your details...'
                 : 'Ask any career doubt or say "Create my pathway to [Goal Role]"...'
             }

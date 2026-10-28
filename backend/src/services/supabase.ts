@@ -110,6 +110,7 @@ async function resolveDbEntities(
   const careerStage = profile.aboutYou?.stageLabel || profile.aboutYou?.currentStage || null;
   const careerIntent = profile.careerIntent || 'uncertain';
   const targetRole = profile.goals?.targetRoles?.[0] || profile.goals?.destinationSummary || null;
+  const userEmail = profile.email || profile.aboutYou?.email || null;
 
   if (existingProfile?.id) {
     profileId = existingProfile.id;
@@ -120,6 +121,7 @@ async function resolveDbEntities(
         anonymous_visitor_id: visitorId,
         career_stage: careerStage,
         career_intent: careerIntent,
+        email: userEmail,
         primary_career_goal: targetRole,
         profile_data: profile,
         profile_summary: targetRole ? `Targeting ${targetRole}` : 'Career Exploration',
@@ -224,19 +226,26 @@ export async function persistChatTurn(payload: PersistChatTurnPayload): Promise<
     const careerStage = profile.aboutYou?.stageLabel || profile.aboutYou?.currentStage || null;
     const careerIntent = profile.careerIntent || 'uncertain';
     const primaryGoal = profile.goals?.targetRoles?.[0] || profile.goals?.destinationSummary || null;
+    const userEmail = profile.email || profile.aboutYou?.email || null;
+
+    const profileUpdateData: Record<string, any> = {
+      career_stage: careerStage,
+      career_intent: careerIntent,
+      primary_career_goal: primaryGoal,
+      profile_data: profile,
+      profile_summary: primaryGoal
+        ? `Stage: ${careerStage || 'Exploring'} • Target: ${primaryGoal}`
+        : `Stage: ${careerStage || 'Exploring'}`,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (userEmail) {
+      profileUpdateData.email = userEmail;
+    }
 
     await supabase
       .from('career_profiles')
-      .update({
-        career_stage: careerStage,
-        career_intent: careerIntent,
-        primary_career_goal: primaryGoal,
-        profile_data: profile,
-        profile_summary: primaryGoal
-          ? `Stage: ${careerStage || 'Exploring'} • Target: ${primaryGoal}`
-          : `Stage: ${careerStage || 'Exploring'}`,
-        updated_at: new Date().toISOString(),
-      })
+      .update(profileUpdateData)
       .eq('id', profileId);
 
     // 2. Insert User Message
@@ -296,6 +305,22 @@ export async function persistChatTurn(payload: PersistChatTurnPayload): Promise<
           extraction_confidence: 0.85,
         });
       }
+    }
+
+    // Capability Assessment Fact
+    if (profile.capabilityAssessment) {
+      factsToInsert.push({
+        career_profile_id: profileId,
+        source_message_id: userMsgRow?.id || null,
+        field_key: `assessment.${profile.capabilityAssessment.targetRole}`,
+        field_value: profile.capabilityAssessment,
+        source_type: 'ASSESSMENT',
+        confirmation_status:
+          profile.capabilityAssessment.outcome === 'capability_demonstrated'
+            ? 'VERIFIED'
+            : 'UNCONFIRMED',
+        extraction_confidence: 1.0,
+      });
     }
 
     if (factsToInsert.length > 0) {
